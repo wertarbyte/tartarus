@@ -1,0 +1,354 @@
+Tartarus - A flexible yet simple backup software
+
+Version 0.4.0
+
+by Stefan Tomanek (stefan.tomanek@wertarbyte.de)
+http://wertarbyte.de/tartarus.shtml
+
+
+Tartarus.sh reads it options from a configuration file specified at the command
+line. This file is in fact a shell script and has the duty of setting several
+variables that control the behaviour of the backup script. Each configuration
+file is called a profile.
+
+== Configuration options
+
+NAME
+    The identifier of the profile; it will be used in the backup filename.
+
+DIRECTORY
+    The directory to be backed up; only a single directory name is allowed
+    here.
+
+STAY_IN_FILESYSTEM
+    When set to "yes", the backup process will not traverse into directories
+    residing on different partitions. This is useful when backing up /, since
+    you do not want to traverse into /proc or /sys.
+    
+    Valid options:
+        * yes
+        * no
+
+EXCLUDE
+    A list of directories you wish to exclude from the backup. Since the
+    configuration file is read like a shell script, globbing and expansion may
+    occur.
+
+CREATE_LVM_SNAPSHOT
+    If this is set to yes, Tartarus will try to freeze the content of the LVM
+    volume specified with LVM_VOLUME_NAME - The snapshot will then be mounted
+    and used as the backup source.
+
+    Once set, the specification of LVM_VOLUME_NAME, becomes mandatory.
+    
+    Valid options:
+        * yes
+        * no
+
+LVM_VOLUME_NAME
+    The LVM logical volume to take a snapshot from before backing up: Be sure
+    to specify the correcet volume your DIRECTORY is on, otherwise weird things
+    might happen (mandatory if CREATE_LVM_SNAPSHOT is enabled).
+
+LVM_SNAPSHOT_SIZE
+    The amount of disk space to allocate for snapshot differences. Make sure
+    your volume group has enough free space for this (Default value is 200 MB).
+
+STORAGE_METHOD
+    Specifies the way the backup data should be stored.
+
+    Valid options:
+        * FILE 
+            Store the backup archive as a file on the local system.
+        * FTP
+            Save the backups archive to an FTP server.
+
+STORAGE_FILE_DIR
+    If STORAGE_METHOD is set to "FILE", this variable specifies the directory
+    Tartarus places the backup archive in.
+
+STORAGE_FTP_SERVER
+    The FTP server you wish to store your backup on.
+
+STORAGE_FTP_USER
+    The username to log into the FTP server.
+
+STORAGE_FTP_PASSWORD
+    The password for logging into the FTP server.
+
+STORAGE_FTP_USE_SSL
+    Specifies whether to use SSL when connecting to the FTP host.
+
+    Valid options:
+        * yes
+        * no
+
+STORAGE_FTP_SSL_INSECURE
+    Ignore problems regarding the server certificate.
+
+    Valid options:
+        * yes
+        * no
+
+COMPRESSION_METHOD
+    The compression method you want to apply to your backup stream.
+
+    Valid options:
+        * none
+        * gzip
+        * bzip2
+
+ENCRYPT_SYMMETRICALLY
+    If enabled, the backup data will be encrypted using a password read from
+    the file specified by ENCRYPT_PASSPHRASE_FILE.
+
+    Valid options:
+        * yes
+        * no
+
+ENCRYPT_PASSPHRASE_FILE
+    The file the password for backup encryption is read from. The password is
+    needed to restore the backup, so you better write it down.
+
+ENCRYPT_ASYMMETRICALLY
+    If enabled, the backup data will be encrypted using the public key specified
+    by ENCRYPT_KEY_ID. ENCRYPT_SYMMETRICALLY and ENCRYPT_ASYMMETRICALLY are mutually
+    exclusive.
+
+    Valid options:
+        * yes
+        * no
+
+ENCRYPT_KEY_ID
+    The key id you wish to encrypt your backup for. Check "gpg --list-keys" for
+    valid key ids.
+
+INCREMENTAL_TIMESTAMP_FILE
+    A timestamp file that is updated on each succesfull full backup run and
+    used as a reference point for future incremental backups
+
+INCREMENTAL_BACKUP
+    Don't create a full backup but only save files that have been modified
+    after the file set by INCREMENTAL_TIMESTAMP_FILE has been touched. Instead
+    of enabling this option in the configuration file, you can also call
+    tartarus.sh with the option "-i".
+
+    Valid options:
+        * yes
+        * no
+
+== Basic configuration examples
+
+Suppose you want to backup your home directories on a regular basis; the
+compressed archive will be stored on a FTP server. This can be achieved easily
+with just a few lines of tartarus configuration. Let's call the profile
+definition »/etc/tartarus/homedirs.conf«:
+
+# That's the profile name
+NAME="homedirs"
+DIRECTORY="/home"
+# We store it using FTP, on the fly
+STORAGE_METHOD="FTP"
+STORAGE_FTP_SERVER="ftpbackup.hostingcompany.com"
+STORAGE_FTP_USER="johndoe"
+STORAGE_FTP_PASSWORD="verysecret"
+COMPRESSION_METHOD="bzip2"
+
+By calling »tartarus.sh /etc/tartarus/homedirs.conf« the script will gather all
+files below /home, compress them using bzip2 and store it on the FTP server
+ftpbackup.hostingcompany.com.
+
+== LVM snapshots
+
+Backing up a partition that is in use can lead to inconsistent backups. To
+avoid this, Tartarus supports the use of LVM snapshots to "freeze" the block
+device and operate on that static copy. The real volume can still be used while
+changes done to the file system structure are not reflected on the "frozen"
+block device.
+
+To use this feature, the file system you wish to back up has to reside on an
+LVM volume and the volume group has to have some free space to store the
+differences between snapshot and real volume that accumulate during the backup
+run. You also have to make sure that the directory /snap does exist, since
+tartarus mounts the created snapshot volume below that directory.
+
+A few additional lines instruct Tartarus to use the snapshot functionality:
+
+# Users keep on working
+CREATE_LVM_SNAPSHOT="yes"
+LVM_VOLUME_NAME="/dev/volumegroup0/home"
+# Allocate enough space for any changes during the backup run
+LVM_SNAPSHOT_SIZE="1000m"
+
+== Incremental backups
+
+Storing a full backup takes a lot of disk space; Often just storing the files
+that changed since the last backup is more desirable - this is called a
+incremental backup.
+
+Tartarus can create a flag file on your system that is used as a reference
+point when doing the next incremental backup. To do this, just add the
+following line to your config:
+
+INCREMENTAL_TIMESTAMP_FILE="/var/spool/tartarus/homedirs"
+
+Everytime a full backup run succeeds, this file is "touched" by Tartarus.
+
+To create an incremental backup based on that file, just add these lines
+to a profile:
+
+INCREMENTAL_BACKUP="yes"
+INCREMENTAL_TIMESTAMP_FILE="/var/spool/tartarus/homedirs"
+
+Instead of copying the profile file and adding the lines, you can also just
+reuse the existing configuration profile and start Tartarus with the option
+"-i": 'tartarus.sh -i /etc/tartarus/homedirs.conf' will create an incremental
+backups based on the latest flag file deposited by the last full run.
+
+== Encryption
+
+Tartarus supports symmetric encryption through gpg (GNU Privacy Guard). To
+utilize it, write your passphrase into a file, for example
+»/etc/tartarus/backups.sec«, and place it at a safe location: You might need it
+one day to restore your precious backup data. Now tell Tartarus where to find
+the secret passphrase by adding the following lines to your profile:
+
+ENCRYPT_SYMMETICALLY="yes"
+ENCRYPT_PASSPHRASE_FILE="/etc/tartarus/backups.sec"
+
+Also make sure that the passphrase file is only readable by root; otherwise
+anyone with access to that file can decrypt your backups.
+
+
+== Restoring a backup
+
+Even more important than creating a backup is restoring it. Since Tartarus is
+largely based on standard unix tools, you won't have to install special
+software - even a basic rescue system will suffice to retrieve your lost data.
+
+Given that the backups is stored on an FTP server, compressed an encrypted, we
+need the following tools to restore it:
+
+- curl, wget or any other FTP client
+- gpg to decrypt the backup stream
+- gzip or bzip, depending on the compression method used
+- tar to extract the archive
+
+This enumeration is also the order in which to apply these programs; First
+download the tar archive to your system, then use "gpg --decrypt" to, well,
+decrypt it. After that you can expand the file by using "gzip -d" (or the
+equivalent of bzip2) and retrieve the "naked" tar archive, which can then be
+manipulated by the usual tar commands.
+
+If you do not have enough disk space to store the entire backup, you can also
+restore it on the fly; just use the "pipe" feature of any unix shell:
+
+# curl ftp://USER:PASS@YOURSERVER/home-20080411-1349.tar.bz2 \
+  | gpg --decrypt \
+  | bzip2 -d \
+  | tar tpv
+
+The tar command "tpv" prints the archives content while using numeric UID/GID
+values for files (so it won't change file ownership while in the rescue system).
+If you really want to extract the archive, replace "t" with an "x" (eXtract).
+
+To restore incremental backups, just restore the last full backup as well as the
+most recent incremental one.
+
+== Tartarus processing hooks
+
+For special configuration purposes, the Tartarus scripts offers special hooks
+where user supplied code can be placed and executed during the backup procedure.
+
+The following hooks are called during the run of the program:
+
+TARTARUS_PRE_PROCESS_HOOK
+    Called right after the config file has been read and the program starts
+
+TARTARUS_POST_PROCESS_HOOK
+    Called right before the program terminates gracefully, before the cleanup
+    procedure
+
+TARTARUS_PRE_CONFIGVERIFY_HOOK
+    Called before the configuration gets verified (after TARTARUS_PRE_PROCESS_HOOK)
+
+TARTARUS_POST_CONFIGVERIFY_HOOK
+    Called after all configuration options and command line arguments have been inspected
+
+TARTARUS_PRE_CLEANUP_HOOK
+    Called before the cleanup procedure runs, the variable ABORT indicates whether
+    the program terminated gracefully
+
+TARTARUS_POST_CLEANUP_HOOK
+    Called at the end of the cleanup procedure
+
+TARTARUS_PRE_FREEZE_HOOK
+    Called right before a LVM snapshot is created
+
+TARTARUS_POST_FREEZE_HOOK
+    Called right after a LVM snapshot has been created
+
+TARTARUS_PRE_STORE_HOOK
+    Called right before the backup data is gathered and stored
+
+TARTARUS_POST_STORE_HOOK
+    Called right after the backup has been stored
+
+TARTARUS_DEBUG_HOOK
+    Called whenever a debug message (contained in the variable DEBUGMSG) is printed
+
+Each segment of the backup procedure - gathering , bundling, compression,
+encryption and storage - itself is also embraced by a pair of hooks. Those
+functions however are integrated into the pipeline that transports your backup
+data, so writing to STDOUT or reading from STDIN in a hook might destroy your data.
+Only do so if you know exactly what you are doing.
+
+TARTARUS_PRE_FIND_HOOK / TARTARUS_POST_FIND_HOOK
+    Executed before/after the find process gathers the files to be saved
+
+TARTARUS_PRE_TAR_HOOK / TARTARUS_POST_FIND_HOOK
+    Executed before/after tar bundles the files to an archive stream
+
+TARTARUS_PRE_COMPRESSION_HOOK / TARTARUS_POST_COMPRESSION_HOOK
+    Executed before/after the data stream is handled by the compression software
+
+TARTARUS_PRE_COMPRESSION_HOOK / TARTARUS_POST_COMPRESSION_HOOK
+    Executed before/after the data stream is processed by the encryption software
+
+TARTARUS_PRE_STORAGE_HOOK / TARTARUS_POST_STORAGE_HOOK
+    Executed before/after the stream is handed over to the storage function
+
+To use a hook, define a shell function of the name in your config file.
+
+As an example, this hook function transfers all debug messages to your syslog
+system:
+
+TARTARUS_DEBUG_HOOK() {
+    echo $DEBUGMSG | logger 
+}
+
+Hooks can also increase the reliability of the snapshot functionality. LVM
+snapshots can lead to slightly inconsistent file systems, since they do not
+freeze the file system, but the underlying block device. This is why Tartarus
+calls 'sync' right before creating the snapshot volume. Most filesystems can cope
+with that issue. But if you want to make sure that the snapshot file system is valid,
+hooks can be used to run a file system check on the snapshot volume before mounting
+it.
+
+TARTARUS_PRE_FREEZE_HOOK() {
+    # make sure everything is synced to disk
+    # before snapshotting
+    sync
+}
+
+TARTARUS_POST_FREEZE_HOOK() {
+    # we can access the internal variables
+    # of the tartarus process, but take care!
+    #
+    # $SNAPDEV should contain the volume we are
+    # about to mount, try auto-repair
+    /sbin/fsck -y "$SNAPDEV"
+}
+
+Last change: $Date$
+Revision: $Revision$

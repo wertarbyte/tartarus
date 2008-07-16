@@ -132,7 +132,7 @@ ENCRYPT_PASSPHRASE_FILE=""
 ENCRYPT_ASYMMETRICALLY="no"
 ENCRYPT_KEY_ID=""
 
-LIMIT_IDLE_IO="no"
+LIMIT_DISK_IO="no"
 
 requireCommand tr tar find || cleanup 1
 
@@ -161,7 +161,7 @@ if [ "$INCREMENTAL_BACKUP" -a ! -e "$INCREMENTAL_TIMESTAMP_FILE"  ]; then
 fi
 
 # Do we want to limit the io load?
-if [ "$LIMIT_IDLE_IO" == "yes" ]; then
+if [ "$LIMIT_DISK_IO" == "yes" ]; then
     requireCommand ionice || cleanup 1
     ionice -c3 -p $$
 fi

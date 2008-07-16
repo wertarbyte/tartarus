@@ -137,7 +137,7 @@ INCREMENTAL_BACKUP
         * yes
         * no
 
-LIMIT_IDLE_IO
+LIMIT_DISK_IO
     When set to "yes", Tartarus uses "ionice" to change the scheduler data for
     the backup run. The backup process will only get disk time when no other
     program is requesting it.

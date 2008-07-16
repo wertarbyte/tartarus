@@ -3,7 +3,7 @@
 # Tartarus by Stefan Tomanek <stefan.tomanek@wertarbyte.de>
 #            http://wertarbyte.de/tartarus.shtml
 #
-# Version 0.4.0
+# Version 0.4.1
 #
 # Last change: $Date$
 
@@ -132,6 +132,8 @@ ENCRYPT_PASSPHRASE_FILE=""
 ENCRYPT_ASYMMETRICALLY="no"
 ENCRYPT_KEY_ID=""
 
+LIMIT_IDLE_IO="no"
+
 requireCommand tr tar find || cleanup 1
 
 source "$PROFILE"
@@ -156,6 +158,12 @@ fi
 if [ "$INCREMENTAL_BACKUP" -a ! -e "$INCREMENTAL_TIMESTAMP_FILE"  ]; then
     debug "Unable to access INCREMENTAL_TIMESTAMP_FILE ($INCREMENTAL_TIMESTAMP_FILE)."
     cleanup 1
+fi
+
+# Do we want to limit the io load?
+if [ "$LIMIT_IDLE_IO" == "yes" ]; then
+    requireCommand ionice || cleanup 1
+    ionice -c3 -p $$
 fi
 
 # Do we want to freeze the filesystem during the backup run?

@@ -1,6 +1,6 @@
 Tartarus - A flexible yet simple backup software
 
-Version 0.4.0
+Version 0.4.1
 
 by Stefan Tomanek (stefan.tomanek@wertarbyte.de)
 http://wertarbyte.de/tartarus.shtml
@@ -136,6 +136,11 @@ INCREMENTAL_BACKUP
     Valid options:
         * yes
         * no
+
+LIMIT_IDLE_IO
+    When set to "yes", Tartarus uses "ionice" to change the scheduler data for
+    the backup run. The backup process will only get disk time when no other
+    program is requesting it.
 
 == Basic configuration examples
 
@@ -351,4 +356,3 @@ TARTARUS_POST_FREEZE_HOOK() {
 }
 
 Last change: $Date$
-Revision: $Revision$

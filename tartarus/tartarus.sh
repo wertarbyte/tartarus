@@ -3,16 +3,18 @@
 # Tartarus by Stefan Tomanek <stefan.tomanek@wertarbyte.de>
 #            http://wertarbyte.de/tartarus.shtml
 #
-# Version 0.4.1
-#
 # Last change: $Date$
+declare -r VERSION="0.5.0"
 
 CMD_INCREMENTAL="no"
+CMD_UPDATE="no"
 PROFILE=""
 # check command line
 while ! [ "$1" == "" ]; do
     if [ "$1" == "-i" -o "$1" == "--inc" ]; then
         CMD_INCREMENTAL="yes"
+    elif [ "$1" == "-u" -o "$1" == "--update" ]; then
+        CMD_UPDATE="yes"
     else
         PROFILE=$1
     fi
@@ -89,11 +91,50 @@ call() {
     hook "POST_$MHOOK"
 }
 
+# We can now check for newer versions of tartarus
+update_check() {
+    requireCommand curl awk || return
+    VERSION_URL="http://wertarbyte.de/tartarus/upgrade-$VERSION"
+
+    NEW_VERSION="$(curl -fs "$VERSION_URL")"
+    if [ ! "$?" -eq 0 ]; then
+        debug "Error checking version information."
+        return 0
+    fi
+
+    awk -vCURRENT="$VERSION" -vNEW="$NEW_VERSION" '
+BEGIN {
+    n1 = split(CURRENT,current,".");
+    n2 = split(NEW,new,".");
+    while (i<=n1 || i<=n2) {
+        x = current[i]
+        y = new[i]
+        if (x < y) exit 1
+        if (x > y) exit 0
+        i++;
+    }
+}
+'
+    if [ "$?" -eq 1 ]; then
+        debug "!!! This script is probably outdated !!!"
+        debug "An upgrade to version $NEW_VERSION is available. Please visit http://wertarbyte.de/tartarus.shtml"
+        debug ""
+        return 1
+    fi
+    return 0
+}
+
+# Do we only want to check for a new version?
+if [ "$CMD_UPDATE" == "yes" ]; then
+    update_check && debug "No new version available"
+    cleanup 0
+fi
 
 if ! [ -e "$PROFILE" ]; then
     debug "You have to supply the path to a backup profile file."
     cleanup 1
 fi
+
 
 # Set default values:
 SNAPSHOT_DIR="/snap"
@@ -134,6 +175,8 @@ ENCRYPT_KEY_ID=""
 
 LIMIT_DISK_IO="no"
 
+CHECK_FOR_UPDATE="yes"
+
 requireCommand tr tar find || cleanup 1
 
 source "$PROFILE"
@@ -146,6 +189,13 @@ if [ "$CMD_INCREMENTAL" == "yes" ]; then
     # overriding config file and default setting
     INCREMENTAL_BACKUP="yes"
     debug "Switching to incremental backup because of commandline switch '-i'"
+fi
+
+# Do we want to check for a new version?
+if [ "$CHECK_FOR_UPDATE" == "yes" ]; then
+    debug "Checking for updates..."
+    update_check
+    debug "done"
 fi
 
 # NAME and DIRECTORY are mandatory

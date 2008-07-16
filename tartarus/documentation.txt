@@ -1,6 +1,6 @@
 Tartarus - A flexible yet simple backup software
 
-Version 0.4.1
+Version 0.5.0
 
 by Stefan Tomanek (stefan.tomanek@wertarbyte.de)
 http://wertarbyte.de/tartarus.shtml
@@ -141,6 +141,11 @@ LIMIT_DISK_IO
     When set to "yes", Tartarus uses "ionice" to change the scheduler data for
     the backup run. The backup process will only get disk time when no other
     program is requesting it.
+
+CHECK_FOR_UPDATE
+    Tartarus checks whether a new version of the script is available. It will
+    then print as message about it and continue with the backup. To disable
+    this behaviour, set this variable to "no".
 
 == Basic configuration examples
 

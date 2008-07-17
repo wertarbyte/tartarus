@@ -1,6 +1,6 @@
 Tartarus - A flexible yet simple backup software
 
-Version 0.5.0
+Version 0.5.1
 
 by Stefan Tomanek (stefan.tomanek@wertarbyte.de)
 http://wertarbyte.de/tartarus.shtml
@@ -30,9 +30,10 @@ STAY_IN_FILESYSTEM
         * no
 
 EXCLUDE
-    A list of directories you wish to exclude from the backup. Since the
-    configuration file is read like a shell script, globbing and expansion may
-    occur.
+    A list of directories you wish to exclude from the backup. While Tartarus
+    will not descend into the directories, they themselves will be included
+    in the backup (without their contents). Since the configuration file is
+    read like a shell script, globbing and expansion may occur.
 
 CREATE_LVM_SNAPSHOT
     If this is set to yes, Tartarus will try to freeze the content of the LVM

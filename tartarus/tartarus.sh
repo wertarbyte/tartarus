@@ -4,7 +4,7 @@
 #            http://wertarbyte.de/tartarus.shtml
 #
 # Last change: $Date$
-declare -r VERSION="0.5.0"
+declare -r VERSION="0.5.1"
 
 CMD_INCREMENTAL="no"
 CMD_UPDATE="no"
@@ -421,7 +421,8 @@ fi
 EXCLUDES=""
 for i in $EXCLUDE; do
     i=$(echo $i | sed 's#^/#./#; s#/$##')
-    EXCLUDES="$EXCLUDES -path $i -prune -o"
+    # Don't descend in the excluded directory, but print the directory itself
+    EXCLUDES="$EXCLUDES -path $i -prune -print0 -o"
 done
 
 debug "Beginning backup run..."
@@ -435,13 +436,13 @@ cd "$BASEDIR"
 
 TAROPTS="--no-unquote --no-recursion"
 FINDOPTS=""
-FINDARGS=""
+FINDARGS="-print0"
 if [ "$STAY_IN_FILESYSTEM" == "yes" ]; then
     FINDOPTS="$FINDOPTS -xdev "
 fi
 
 if [ "$INCREMENTAL_BACKUP" == "yes" ]; then
-    FINDARGS="-newer $INCREMENTAL_TIMESTAMP_FILE"
+    FINDARGS="-newer $INCREMENTAL_TIMESTAMP_FILE $FINDARGS"
 fi
 
 # Make sure that an error inside the pipeline propagates
@@ -449,7 +450,7 @@ set -o pipefail
 
 hook PRE_STORE
 
-call find $BDIR $FINDOPTS $EXCLUDES $FINDARGS -print0 | \
+call find $BDIR $FINDOPTS $EXCLUDES $FINDARGS | \
     call tar cp $TAROPTS --null -T -  | \
     call compression | \
     call encryption | \

@@ -141,6 +141,7 @@ SNAPSHOT_DIR="/snap"
 LVM_SNAPSHOT_SIZE="200m"
 BASEDIR="/"
 EXCLUDE=""
+EXCLUDE_FILES=""
 # Profile specific
 NAME=""
 DIRECTORY=""
@@ -423,6 +424,11 @@ for i in $EXCLUDE; do
     i=$(echo $i | sed 's#^/#./#; s#/$##')
     # Don't descend in the excluded directory, but print the directory itself
     EXCLUDES="$EXCLUDES -path $i -prune -print0 -o"
+done
+for i in $EXCLUDE_FILES; do
+    i=$(echo $i | sed 's#^/#./#; s#/$##')
+    # Ignore files in the directory, but include subdirectories
+    EXCLUDES="$EXCLUDES -path $i/\* \! -type d -prune -o"
 done
 
 debug "Beginning backup run..."

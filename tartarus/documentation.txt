@@ -35,6 +35,11 @@ EXCLUDE
     in the backup (without their contents). Since the configuration file is
     read like a shell script, globbing and expansion may occur.
 
+EXCLUDE_FILES
+    A list of directories from which no files will be saved, while its 
+    subdirectories will be stored in the backup. This is useful if you want
+    to preserve the directory structure while discarding the file content.
+
 CREATE_LVM_SNAPSHOT
     If this is set to yes, Tartarus will try to freeze the content of the LVM
     volume specified with LVM_VOLUME_NAME - The snapshot will then be mounted

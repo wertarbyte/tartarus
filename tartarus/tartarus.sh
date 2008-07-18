@@ -4,7 +4,7 @@
 #            http://wertarbyte.de/tartarus.shtml
 #
 # Last change: $Date$
-declare -r VERSION="0.5.1"
+declare -r VERSION="0.5.2"
 
 CMD_INCREMENTAL="no"
 CMD_UPDATE="no"
@@ -428,7 +428,7 @@ done
 for i in $EXCLUDE_FILES; do
     i=$(echo $i | sed 's#^/#./#; s#/$##')
     # Ignore files in the directory, but include subdirectories
-    EXCLUDES="$EXCLUDES -path $i/\* \! -type d -prune -o"
+    EXCLUDES="$EXCLUDES -path '$i/*' ! -type d -prune -o"
 done
 
 debug "Beginning backup run..."
@@ -456,7 +456,7 @@ set -o pipefail
 
 hook PRE_STORE
 
-call find $BDIR $FINDOPTS $EXCLUDES $FINDARGS | \
+call find "$BDIR" $FINDOPTS $EXCLUDES $FINDARGS | \
     call tar cp $TAROPTS --null -T -  | \
     call compression | \
     call encryption | \

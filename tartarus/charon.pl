@@ -92,7 +92,7 @@ sub string2time {
     }
 }
 
-my $ftp = Net::FTP->new($host, Debug => 0) || die "Unable to connect to server";
+my $ftp = Net::FTP->new($host, Debug => 0, Passive => 1) || die "Unable to connect to server";
 $ftp->login($user, $pass) || die "Unable to authenticate, ", $ftp->message();
 my @listing = $ftp->ls();
 

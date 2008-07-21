@@ -229,7 +229,7 @@ utilize it, write your passphrase into a file, for example
 one day to restore your precious backup data. Now tell Tartarus where to find
 the secret passphrase by adding the following lines to your profile:
 
-ENCRYPT_SYMMETICALLY="yes"
+ENCRYPT_SYMMETRICALLY="yes"
 ENCRYPT_PASSPHRASE_FILE="/etc/tartarus/backups.sec"
 
 Also make sure that the passphrase file is only readable by root; otherwise

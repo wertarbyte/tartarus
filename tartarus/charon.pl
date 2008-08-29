@@ -94,6 +94,7 @@ sub string2time {
 
 my $ftp = Net::FTP->new($host, Debug => 0, Passive => 1) || die "Unable to connect to server";
 $ftp->login($user, $pass) || die "Unable to authenticate, ", $ftp->message();
+$ftp->cwd($dir) || die "Error changing to backup directory, ", $ftp->message();
 my @listing = $ftp->ls();
 
 my %delete;

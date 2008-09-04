@@ -1,6 +1,6 @@
 Tartarus - A flexible yet simple backup software
 
-Version 0.5.2
+Version 0.5.3
 
 by Stefan Tomanek (stefan.tomanek@wertarbyte.de)
 http://wertarbyte.de/tartarus.shtml
@@ -55,6 +55,10 @@ LVM_VOLUME_NAME
     The LVM logical volume to take a snapshot from before backing up: Be sure
     to specify the correcet volume your DIRECTORY is on, otherwise weird things
     might happen (mandatory if CREATE_LVM_SNAPSHOT is enabled).
+
+LVM_MOUNT_DIR
+    The directory your volume is usually mounted; please specify an absolute
+    path here (mandatory if CREATE_LVM_SNAPSHOT is enabled).
 
 LVM_SNAPSHOT_SIZE
     The amount of disk space to allocate for snapshot differences. Make sure
@@ -129,6 +133,9 @@ ENCRYPT_KEY_ID
     The key id you wish to encrypt your backup for. Check "gpg --list-keys" for
     valid key ids.
 
+ENCRYPT_KEYRING
+    The keyring file you wish to read. If unspecified, gnupg uses the user keyring.
+
 INCREMENTAL_TIMESTAMP_FILE
     A timestamp file that is updated on each succesfull full backup run and
     used as a reference point for future incremental backups
@@ -193,6 +200,7 @@ A few additional lines instruct Tartarus to use the snapshot functionality:
 # Users keep on working
 CREATE_LVM_SNAPSHOT="yes"
 LVM_VOLUME_NAME="/dev/volumegroup0/home"
+LVM_MOUNT_DIR="/home"
 # Allocate enough space for any changes during the backup run
 LVM_SNAPSHOT_SIZE="1000m"
 

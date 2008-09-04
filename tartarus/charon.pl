@@ -9,7 +9,7 @@
 # WARNING: This script will delete your backup data when called
 # improperly
 #
-# Version 0.5.2
+# Version 0.5.3
 #
 # Last change: $Date$
 
@@ -38,7 +38,7 @@ my $help = 0;
 sub usage {
     my ($error) = @_;
     print <<EOF;
-charon.pl by Stefan Tomanek <stefan.tomanek\@wertarbyte.de
+charon.pl by Stefan Tomanek <stefan.tomanek\@wertarbyte.de>
 
     --host          FTP server to connect to
     --user          username to authenticate with

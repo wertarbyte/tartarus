@@ -4,7 +4,7 @@
 #            http://wertarbyte.de/tartarus.shtml
 #
 # Last change: $Date$
-declare -r VERSION="0.5.2"
+declare -r VERSION="0.5.3"
 
 CMD_INCREMENTAL="no"
 CMD_UPDATE="no"
@@ -173,6 +173,8 @@ ENCRYPT_PASSPHRASE_FILE=""
 # Encrypt using a public key?
 ENCRYPT_ASYMMETRICALLY="no"
 ENCRYPT_KEY_ID=""
+# Where to find the keyring file
+ENCRYPT_KEYRING=""
 
 LIMIT_DISK_IO="no"
 
@@ -374,15 +376,24 @@ fi
 
 if [ "$ENCRYPT_ASYMMETRICALLY" == "yes" ]; then
     requireCommand gpg || cleanup 1
-
-    # Can we access the passphrase file?
-    if ! gpg --list-key "$ENCRYPT_KEY_ID" >/dev/null 2>/dev/null; then
+    
+    GPGOPTIONS="--no-use-agent --no-tty --trust-model always"
+    if [ -n "$ENCRYPT_KEYRING" ]; then
+        if [ -f "$ENCRYPT_KEYRING" ]; then
+            GPGOPTIONS='$GPGOPTIONS --keyring "'$ENCRYPT_KEYRING'"'
+        else
+            debug "ENCRYPT_KEYRING '$ENCRYPT_KEYRING' specified but not found."
+            cleanup 1
+        fi
+    fi
+    # Can we find the key id?
+    if ! gpg $GPGOPTIONS --list-key "$ENCRYPT_KEY_ID" >/dev/null 2>/dev/null; then
         debug "Unable to find ENCRYPT_KEY_ID '$ENCRYPT_KEY_ID'."
         cleanup 1
     else
         encryption() {
             # asymmetric encryption
-            gpg --no-tty --trust-model always --encrypt -r "$ENCRYPT_KEY_ID"
+            gpg $GPGOPTIONS --encrypt -r "$ENCRYPT_KEY_ID"
         }
     fi
 fi

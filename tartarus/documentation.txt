@@ -1,6 +1,6 @@
 Tartarus - A flexible yet simple backup software
 
-Version 0.5.3
+Version 0.5.4
 
 by Stefan Tomanek (stefan.tomanek@wertarbyte.de)
 http://wertarbyte.de/tartarus.shtml

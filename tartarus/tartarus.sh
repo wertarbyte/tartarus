@@ -4,7 +4,7 @@
 #            http://wertarbyte.de/tartarus.shtml
 #
 # Last change: $Date$
-declare -r VERSION="0.5.3"
+declare -r VERSION="0.5.4"
 
 CMD_INCREMENTAL="no"
 CMD_UPDATE="no"
@@ -380,7 +380,7 @@ if [ "$ENCRYPT_ASYMMETRICALLY" == "yes" ]; then
     GPGOPTIONS="--no-use-agent --no-tty --trust-model always"
     if [ -n "$ENCRYPT_KEYRING" ]; then
         if [ -f "$ENCRYPT_KEYRING" ]; then
-            GPGOPTIONS='$GPGOPTIONS --keyring "'$ENCRYPT_KEYRING'"'
+            GPGOPTIONS=$GPGOPTIONS' --keyring "'$ENCRYPT_KEYRING'"'
         else
             debug "ENCRYPT_KEYRING '$ENCRYPT_KEYRING' specified but not found."
             cleanup 1

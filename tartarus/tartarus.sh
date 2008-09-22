@@ -4,7 +4,7 @@
 #            http://wertarbyte.de/tartarus.shtml
 #
 # Last change: $Date$
-declare -r VERSION="0.5.4"
+declare -r VERSION="0.5.5"
 
 CMD_INCREMENTAL="no"
 CMD_UPDATE="no"
@@ -175,6 +175,7 @@ ENCRYPT_ASYMMETRICALLY="no"
 ENCRYPT_KEY_ID=""
 # Where to find the keyring file
 ENCRYPT_KEYRING=""
+ENCRYPT_GPG_OPTIONS=""
 
 LIMIT_DISK_IO="no"
 
@@ -208,7 +209,7 @@ if [ -z "$NAME" -o -z "$DIRECTORY" ]; then
 fi
 
 # Want incremental backups? Specify INCREMENTAL_TIMESTAMP_FILE
-if [ "$INCREMENTAL_BACKUP" -a ! -e "$INCREMENTAL_TIMESTAMP_FILE"  ]; then
+if [ "$INCREMENTAL_BACKUP" == "yes" -a ! -e "$INCREMENTAL_TIMESTAMP_FILE"  ]; then
     debug "Unable to access INCREMENTAL_TIMESTAMP_FILE ($INCREMENTAL_TIMESTAMP_FILE)."
     cleanup 1
 fi
@@ -359,6 +360,8 @@ if [ "$ENCRYPT_SYMMETRICALLY" == "yes" -a "$ENCRYPT_ASYMMETRICALLY" == "yes" ]; 
     cleanup 1
 fi
 
+GPGOPTIONS="--no-use-agent --no-tty --trust-model always $ENCRYPT_GPG_OPTIONS"
+
 if [ "$ENCRYPT_SYMMETRICALLY" == "yes" ]; then
     requireCommand gpg || cleanup 1
 
@@ -369,7 +372,7 @@ if [ "$ENCRYPT_SYMMETRICALLY" == "yes" ]; then
     else
         encryption() {
             # symmetric encryption
-            gpg --no-tty -c --passphrase-file "$ENCRYPT_PASSPHRASE_FILE"
+            gpg $GPGOPTIONS -c --passphrase-file "$ENCRYPT_PASSPHRASE_FILE"
         }
     fi
 fi
@@ -377,17 +380,16 @@ fi
 if [ "$ENCRYPT_ASYMMETRICALLY" == "yes" ]; then
     requireCommand gpg || cleanup 1
     
-    GPGOPTIONS="--no-use-agent --no-tty --trust-model always"
     if [ -n "$ENCRYPT_KEYRING" ]; then
         if [ -f "$ENCRYPT_KEYRING" ]; then
-            GPGOPTIONS=$GPGOPTIONS' --keyring "'$ENCRYPT_KEYRING'"'
+            GPGOPTIONS=$GPGOPTIONS' --keyring '$ENCRYPT_KEYRING
         else
             debug "ENCRYPT_KEYRING '$ENCRYPT_KEYRING' specified but not found."
             cleanup 1
         fi
     fi
     # Can we find the key id?
-    if ! gpg $GPGOPTIONS --list-key "$ENCRYPT_KEY_ID" >/dev/null 2>/dev/null; then
+    if ! gpg $GPGOPTIONS --list-key "$ENCRYPT_KEY_ID" >/dev/null 2>&1; then
         debug "Unable to find ENCRYPT_KEY_ID '$ENCRYPT_KEY_ID'."
         cleanup 1
     else

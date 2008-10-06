@@ -4,7 +4,7 @@
 #            http://wertarbyte.de/tartarus.shtml
 #
 # Last change: $Date$
-declare -r VERSION="0.5.5"
+declare -r VERSION="0.5.6"
 
 CMD_INCREMENTAL="no"
 CMD_UPDATE="no"
@@ -360,7 +360,7 @@ if [ "$ENCRYPT_SYMMETRICALLY" == "yes" -a "$ENCRYPT_ASYMMETRICALLY" == "yes" ]; 
     cleanup 1
 fi
 
-GPGOPTIONS="--no-use-agent --no-tty --trust-model always $ENCRYPT_GPG_OPTIONS"
+GPGOPTIONS="--batch --no-use-agent --no-tty --trust-model always $ENCRYPT_GPG_OPTIONS"
 
 if [ "$ENCRYPT_SYMMETRICALLY" == "yes" ]; then
     requireCommand gpg || cleanup 1

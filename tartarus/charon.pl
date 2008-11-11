@@ -9,7 +9,7 @@
 # WARNING: This script will delete your backup data when called
 # improperly
 #
-# Version 0.5.5
+# Version 0.6.0
 #
 # Last change: $Date$
 
@@ -99,7 +99,7 @@ my @listing = $ftp->ls();
 
 my %delete;
 for my $filename (sort @listing) {
-    if ($filename =~ /^tartarus-(.+?)-([0-9]{4}[01][0-9][0-3][0-9]-[012][0-9][0-9]{2})(?:\.|-inc-([0-9]{4}[01][0-9][0-3][0-9]-[012][0-9][0-9]{2}))?\.tar/) {
+    if ($filename =~ /^tartarus-(.+?)-([0-9]{4}[01][0-9][0-3][0-9]-[012][0-9][0-9]{2})(?:\.|-inc-([0-9]{4}[01][0-9][0-3][0-9]-[012][0-9][0-9]{2}))?\.(tar|afio)/) {
         my $profile = $1;
         next unless ($all || $uprofile eq $profile);
         my $date = $2;

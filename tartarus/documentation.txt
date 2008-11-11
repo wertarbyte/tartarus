@@ -1,6 +1,6 @@
 Tartarus - A flexible yet simple backup software
 
-Version 0.5.5
+Version 0.6.0
 
 by Stefan Tomanek (stefan.tomanek@wertarbyte.de)
 http://wertarbyte.de/tartarus.shtml
@@ -63,6 +63,15 @@ LVM_MOUNT_DIR
 LVM_SNAPSHOT_SIZE
     The amount of disk space to allocate for snapshot differences. Make sure
     your volume group has enough free space for this (Default value is 200 MB).
+
+ASSEMBLY_METHOD
+    The method you would like to employ to combine your file system into an coherent
+    data archive. The default method is "tar", but tartarus also supports the more
+    modern "afio" format. You must have the corresponding archive program installed.
+
+    Valid options:
+        * tar
+        * afio
 
 STORAGE_METHOD
     Specifies the way the backup data should be stored.

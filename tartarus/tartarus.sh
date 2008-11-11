@@ -4,7 +4,7 @@
 #            http://wertarbyte.de/tartarus.shtml
 #
 # Last change: $Date$
-declare -r VERSION="0.5.6"
+declare -r VERSION="0.6.0"
 
 CMD_INCREMENTAL="no"
 CMD_UPDATE="no"
@@ -149,6 +149,10 @@ STAY_IN_FILESYSTEM="no"
 CREATE_LVM_SNAPSHOT="no"
 LVM_VOLUME_NAME=""
 # Valid methods are:
+# * tar (default)
+# * afio
+ASSEMBLY_METHOD="tar"
+# Valid methods are:
 # * FTP
 # * FILE
 # * SSH
@@ -181,7 +185,11 @@ LIMIT_DISK_IO="no"
 
 CHECK_FOR_UPDATE="yes"
 
-requireCommand tr tar find || cleanup 1
+# Write a logfile with all files found for backup?
+FILE_LIST_CREATION="no"
+FILE_LIST_DIRECTORY=""
+
+requireCommand tr find || cleanup 1
 
 source "$PROFILE"
 
@@ -220,6 +228,14 @@ if [ "$LIMIT_DISK_IO" == "yes" ]; then
     ionice -c3 -p $$
 fi
 
+# Do we want a file list?
+if [ "$FILE_LIST_CREATION" == "yes" ]; then
+    if [ -z "$FILE_LIST_DIRECTORY" -o ! -d "$FILE_LIST_DIRECTORY" ]; then
+        debug "Unable to access FILE_LIST_DIRECTORY ($FILE_LIST_DIRECTORY)."
+        cleanup 1
+    fi
+fi
+
 # Do we want to freeze the filesystem during the backup run?
 if [ "$CREATE_LVM_SNAPSHOT" == "yes" ]; then
     if [ -z "$LVM_VOLUME_NAME" ]; then
@@ -252,12 +268,39 @@ constructFilename() {
         BASEDON=$(date -r "$INCREMENTAL_TIMESTAMP_FILE" '+%Y%m%d-%H%M')
         INC="-inc-${BASEDON}"
     fi
-    FILENAME="tartarus-${NAME}-${DATE}${INC}.tar${ARCHIVE_EXTENSION}"
+    FILENAME="tartarus-${NAME}-${DATE}${INC}.${ASSEMBLY_METHOD}${ARCHIVE_EXTENSION:-}"
 
     hook FILENAME
     
     echo $FILENAME
 }
+
+# Check backup collation methods
+if [ -z "$ASSEMBLY_METHOD" -o "$ASSEMBLY_METHOD" == "tar" ]; then
+    # use the traditional tar setup
+    requireCommand tar || cleanup 1
+    collate() {
+        TAROPTS="--no-unquote --no-recursion"
+        call tar cp $TAROPTS --null -T -
+    }
+elif [ "$ASSEMBLY_METHOD" == "afio" ]; then
+    # afio is the new hotness
+    requireCommand afio || cleanup 1
+    AFIO_OPTIONS=""
+    if [ "$COMPRESSION_METHOD" == "gzip" ]; then
+        AFIO_OPTIONS="$AFIO_OPTIONS -Z -P gzip"
+        ARCHIVE_EXTENSION=".gz"
+    elif [ "$COMPRESSION_METHOD" == "bzip2" ]; then
+        AFIO_OPTIONS="$AFIO_OPTIONS -Z -P bzip2"
+        ARCHIVE_EXTENSION=".bz2"
+    fi
+    collate() {
+        call afio -o $AFIO_OPTIONS -0 -
+    }
+else
+    debug "Unknown ASSEMBLY_METHOD '$ASSEMBLY_METHOD' specified"
+    cleanup 1
+fi
 
 # Check backup storage options
 if [ "$STORAGE_METHOD" == "FTP" ]; then
@@ -334,19 +377,22 @@ fi
 compression() {
     cat -
 }
-ARCHIVE_EXTENSION=""
-if [ "$COMPRESSION_METHOD" == "bzip2" ]; then
-    requireCommand bzip2 || cleanup 1
-    compression() {
-        bzip2
-    }
-    ARCHIVE_EXTENSION=".bz2"
-elif [ "$COMPRESSION_METHOD" == "gzip" ]; then
-    requireCommand gzip || cleanup 1
-    compression() {
-        gzip
-    }
-    ARCHIVE_EXTENSION=".gz"
+
+# afio handles compression by itself
+if [ "$ASSEMBLY_METHOD" != "afio" ]; then
+    if [ "$COMPRESSION_METHOD" == "bzip2" ]; then
+        requireCommand bzip2 || cleanup 1
+        compression() {
+            bzip2
+        }
+        ARCHIVE_EXTENSION=".bz2"
+    elif [ "$COMPRESSION_METHOD" == "gzip" ]; then
+        requireCommand gzip || cleanup 1
+        compression() {
+            gzip
+        }
+        ARCHIVE_EXTENSION=".gz"
+    fi
 fi
 
 # Just a method that does nothing
@@ -453,9 +499,14 @@ BDIR=$(echo $DIRECTORY | sed 's#^/#./#')
 cd "$BASEDIR"
 
 
-TAROPTS="--no-unquote --no-recursion"
+WRITE_LIST_FILE=""
+
+if [ "$FILE_LIST_CREATION" == "yes" ]; then
+    WRITE_LIST_FILE="-fls $FILE_LIST_DIRECTORY/${NAME}.${DATE}.running"
+fi
+
 FINDOPTS=""
-FINDARGS="-print0"
+FINDARGS="-print0 $WRITE_LIST_FILE"
 if [ "$STAY_IN_FILESYSTEM" == "yes" ]; then
     FINDOPTS="$FINDOPTS -xdev "
 fi
@@ -470,7 +521,7 @@ set -o pipefail
 hook PRE_STORE
 
 call find "$BDIR" $FINDOPTS $EXCLUDES $FINDARGS | \
-    call tar cp $TAROPTS --null -T -  | \
+    call collate | \
     call compression | \
     call encryption | \
     call storage
@@ -485,6 +536,12 @@ if [ ! "$BACKUP_FAILURE" -eq 0 ]; then
     debug "ERROR creating/processing/storing backup, check above messages"
     cleanup 1
 fi
+
+# move list file to its final location
+if [ "$FILE_LIST_CREATION" == "yes" ]; then
+    mv "$FILE_LIST_DIRECTORY/${NAME}.${DATE}.running" "$FILE_LIST_DIRECTORY/${NAME}.${DATE}"
+fi
+
 
 # If we did a full backup, we might want to update the timestamp file
 if [ ! -z "$INCREMENTAL_TIMESTAMP_FILE" -a ! "$INCREMENTAL_BACKUP" == "yes" ]; then

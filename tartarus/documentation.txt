@@ -285,6 +285,14 @@ The tar command "tpv" prints the archives content while using numeric UID/GID
 values for files (so it won't change file ownership while in the rescue system).
 If you really want to extract the archive, replace "t" with an "x" (eXtract).
 
+If you are using the afio file format, compression does not take part on the
+entire stream, but is handled by afio itself on a per file basis. The command
+line for listing such a backup might look like this:
+
+# curl ftp://USER:PASS@YOURSERVER/home-20080411-1349.tar.bz2 \
+  | gpg --decrypt \
+  | afio -Z -P bzip2 -t -
+
 To restore incremental backups, just restore the last full backup as well as the
 most recent incremental one.
 

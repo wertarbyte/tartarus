@@ -27,6 +27,21 @@ debug() {
     echo $DEBUGMSG >&2
 }
 
+isEnabled() {
+    V="$1"
+    case "$V" in
+        yes|YES|1|on|ON|true|enabled)
+            return 0
+        ;;
+        no|NO|0|off|OFF|false|disabled|"")
+            return 1
+        ;;
+        *)
+            return 1
+        ;;
+    esac
+}
+
 requireCommand() {
     ERROR=0
     for CMD in $@; do
@@ -46,7 +61,7 @@ cleanup() {
         debug "Canceling backup procedure and cleaning up..."
     fi
 
-    if [ "$CREATE_LVM_SNAPSHOT" == "yes" ]; then
+    if isEnabled "$CREATE_LVM_SNAPSHOT"; then
         umount $SNAPDEV 2> /dev/null
         lvremove -f $SNAPDEV 2> /dev/null
     fi
@@ -125,7 +140,7 @@ BEGIN {
 }
 
 # Do we only want to check for a new version?
-if [ "$CMD_UPDATE" == "yes" ]; then
+if isEnabled "$CMD_UPDATE"; then
     update_check && debug "No new version available"
     cleanup 0
 fi
@@ -197,14 +212,14 @@ hook PRE_PROCESS
 
 hook PRE_CONFIGVERIFY
 # Has an incremental backup been demanded from the command line?
-if [ "$CMD_INCREMENTAL" == "yes" ]; then
+if isEnabled "$CMD_INCREMENTAL"; then
     # overriding config file and default setting
     INCREMENTAL_BACKUP="yes"
     debug "Switching to incremental backup because of commandline switch '-i'"
 fi
 
 # Do we want to check for a new version?
-if [ "$CHECK_FOR_UPDATE" == "yes" ]; then
+if isEnabled "$CHECK_FOR_UPDATE"; then
     debug "Checking for updates..."
     update_check
     debug "done"
@@ -217,19 +232,19 @@ if [ -z "$NAME" -o -z "$DIRECTORY" ]; then
 fi
 
 # Want incremental backups? Specify INCREMENTAL_TIMESTAMP_FILE
-if [ "$INCREMENTAL_BACKUP" == "yes" -a ! -e "$INCREMENTAL_TIMESTAMP_FILE"  ]; then
+if isEnabled "$INCREMENTAL_BACKUP" && [ ! -e "$INCREMENTAL_TIMESTAMP_FILE"  ]; then
     debug "Unable to access INCREMENTAL_TIMESTAMP_FILE ($INCREMENTAL_TIMESTAMP_FILE)."
     cleanup 1
 fi
 
 # Do we want to limit the io load?
-if [ "$LIMIT_DISK_IO" == "yes" ]; then
+if isEnabled "$LIMIT_DISK_IO"; then
     requireCommand ionice || cleanup 1
     ionice -c3 -p $$
 fi
 
 # Do we want a file list?
-if [ "$FILE_LIST_CREATION" == "yes" ]; then
+if isEnabled "$FILE_LIST_CREATION"; then
     if [ -z "$FILE_LIST_DIRECTORY" -o ! -d "$FILE_LIST_DIRECTORY" ]; then
         debug "Unable to access FILE_LIST_DIRECTORY ($FILE_LIST_DIRECTORY)."
         cleanup 1
@@ -237,7 +252,7 @@ if [ "$FILE_LIST_CREATION" == "yes" ]; then
 fi
 
 # Do we want to freeze the filesystem during the backup run?
-if [ "$CREATE_LVM_SNAPSHOT" == "yes" ]; then
+if isEnabled "$CREATE_LVM_SNAPSHOT"; then
     if [ -z "$LVM_VOLUME_NAME" ]; then
         debug "LVM_VOLUME_NAME is mandatory when using LVM snapshots"
         cleanup 1
@@ -264,7 +279,7 @@ if [ "$CREATE_LVM_SNAPSHOT" == "yes" ]; then
 fi
 
 constructFilename() {
-    if [ "$INCREMENTAL_BACKUP" == "yes" ]; then
+    if isEnabled "$INCREMENTAL_BACKUP"; then
         BASEDON=$(date -r "$INCREMENTAL_TIMESTAMP_FILE" '+%Y%m%d-%H%M')
         INC="-inc-${BASEDON}"
     fi
@@ -315,10 +330,10 @@ if [ "$STORAGE_METHOD" == "FTP" ]; then
     storage() {
         # stay silent, but print error messages if aborting
         OPTS="-u $STORAGE_FTP_USER:$STORAGE_FTP_PASSWORD -s -S"
-        if [ "$STORAGE_FTP_USE_SSL" == "yes" ]; then
+        if isEnabled "$STORAGE_FTP_USE_SSL"; then
             OPTS="$OPTS --ftp-ssl"
         fi
-        if [ "$STORAGE_FTP_SSL_INSECURE" == "yes" ]; then
+        if isEnabled "$STORAGE_FTP_SSL_INSECURE"; then
             OPTS="$OPTS -k"
         fi
         FILE=$(constructFilename)
@@ -401,14 +416,14 @@ encryption() {
 }
 
 # We can only use one method of encryption at once
-if [ "$ENCRYPT_SYMMETRICALLY" == "yes" -a "$ENCRYPT_ASYMMETRICALLY" == "yes" ]; then
+if isEnabled "$ENCRYPT_SYMMETRICALLY" && isEnabled "$ENCRYPT_ASYMMETRICALLY"; then
     debug "ENCRYPT_SYMMETRICALLY and ENCRYPT_ASYMMETRICALLY are mutually exclusive."
     cleanup 1
 fi
 
 GPGOPTIONS="--batch --no-use-agent --no-tty --trust-model always $ENCRYPT_GPG_OPTIONS"
 
-if [ "$ENCRYPT_SYMMETRICALLY" == "yes" ]; then
+if isEnabled "$ENCRYPT_SYMMETRICALLY"; then
     requireCommand gpg || cleanup 1
 
     # Can we access the passphrase file?
@@ -423,7 +438,7 @@ if [ "$ENCRYPT_SYMMETRICALLY" == "yes" ]; then
     fi
 fi
 
-if [ "$ENCRYPT_ASYMMETRICALLY" == "yes" ]; then
+if isEnabled "$ENCRYPT_ASYMMETRICALLY"; then
     requireCommand gpg || cleanup 1
     
     if [ -n "$ENCRYPT_KEYRING" ]; then
@@ -462,7 +477,7 @@ if ! [ -z "$INCREMENTAL_TIMESTAMP_FILE" ]; then
     echo $DATE > "${INCREMENTAL_TIMESTAMP_FILE}.running"
 fi
 
-if [ "$CREATE_LVM_SNAPSHOT" == "yes" ]; then
+if isEnabled "$CREATE_LVM_SNAPSHOT"; then
     # create an LVM snapshot
     SNAPDEV="${LVM_VOLUME_NAME}_snap"
     # Call the hook script
@@ -501,17 +516,17 @@ cd "$BASEDIR"
 
 WRITE_LIST_FILE=""
 
-if [ "$FILE_LIST_CREATION" == "yes" ]; then
+if isEnabled "$FILE_LIST_CREATION"; then
     WRITE_LIST_FILE="-fls $FILE_LIST_DIRECTORY/${NAME}.${DATE}.running"
 fi
 
 FINDOPTS=""
 FINDARGS="-print0 $WRITE_LIST_FILE"
-if [ "$STAY_IN_FILESYSTEM" == "yes" ]; then
+if isEnabled "$STAY_IN_FILESYSTEM"; then
     FINDOPTS="$FINDOPTS -xdev "
 fi
 
-if [ "$INCREMENTAL_BACKUP" == "yes" ]; then
+if isEnabled "$INCREMENTAL_BACKUP"; then
     FINDARGS="-newer $INCREMENTAL_TIMESTAMP_FILE $FINDARGS"
 fi
 
@@ -538,13 +553,13 @@ if [ ! "$BACKUP_FAILURE" -eq 0 ]; then
 fi
 
 # move list file to its final location
-if [ "$FILE_LIST_CREATION" == "yes" ]; then
+if isEnabled "$FILE_LIST_CREATION"; then
     mv "$FILE_LIST_DIRECTORY/${NAME}.${DATE}.running" "$FILE_LIST_DIRECTORY/${NAME}.${DATE}"
 fi
 
 
 # If we did a full backup, we might want to update the timestamp file
-if [ ! -z "$INCREMENTAL_TIMESTAMP_FILE" -a ! "$INCREMENTAL_BACKUP" == "yes" ]; then
+if [ ! -z "$INCREMENTAL_TIMESTAMP_FILE" ] && ! isEnabled "$INCREMENTAL_BACKUP"; then
     if [ -e "$INCREMENTAL_TIMESTAMP_FILE" ]; then
         OLDDATE=$(< $INCREMENTAL_TIMESTAMP_FILE)
         cp -a "$INCREMENTAL_TIMESTAMP_FILE" "$INCREMENTAL_TIMESTAMP_FILE.$OLDDATE"

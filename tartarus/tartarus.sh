@@ -4,7 +4,7 @@
 #            http://wertarbyte.de/tartarus.shtml
 #
 # Last change: $Date$
-declare -r VERSION="0.6.0"
+declare -r VERSION="0.6.1"
 
 CMD_INCREMENTAL="no"
 CMD_UPDATE="no"
@@ -431,6 +431,7 @@ if isEnabled "$ENCRYPT_SYMMETRICALLY"; then
         debug "ENCRYPT_PASSPHRASE_FILE '$ENCRYPT_PASSPHRASE_FILE' is not readable."
         cleanup 1
     else
+        ARCHIVE_EXTENSION="$ARCHIVE_EXTENSION.gpg"
         encryption() {
             # symmetric encryption
             gpg $GPGOPTIONS -c --passphrase-file "$ENCRYPT_PASSPHRASE_FILE"
@@ -454,6 +455,7 @@ if isEnabled "$ENCRYPT_ASYMMETRICALLY"; then
         debug "Unable to find ENCRYPT_KEY_ID '$ENCRYPT_KEY_ID'."
         cleanup 1
     else
+        ARCHIVE_EXTENSION="$ARCHIVE_EXTENSION.gpg"
         encryption() {
             # asymmetric encryption
             gpg $GPGOPTIONS --encrypt -r "$ENCRYPT_KEY_ID"

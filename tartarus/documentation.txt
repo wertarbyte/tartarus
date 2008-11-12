@@ -1,6 +1,6 @@
 Tartarus - A flexible yet simple backup software
 
-Version 0.6.0
+Version 0.6.1
 
 by Stefan Tomanek (stefan.tomanek@wertarbyte.de)
 http://wertarbyte.de/tartarus.shtml
@@ -266,6 +266,7 @@ need the following tools to restore it:
 - gpg to decrypt the backup stream
 - gzip or bzip, depending on the compression method used
 - tar to extract the archive
+- afio (or cpio) to extract the archive when using this file format
 
 This enumeration is also the order in which to apply these programs; First
 download the tar archive to your system, then use "gpg --decrypt" to, well,
@@ -276,7 +277,7 @@ manipulated by the usual tar commands.
 If you do not have enough disk space to store the entire backup, you can also
 restore it on the fly; just use the "pipe" feature of any unix shell:
 
-# curl ftp://USER:PASS@YOURSERVER/home-20080411-1349.tar.bz2 \
+# curl ftp://USER:PASS@YOURSERVER/home-20080411-1349.tar.bz2.gpg \
   | gpg --decrypt \
   | bzip2 -d \
   | tar tpv
@@ -289,7 +290,7 @@ If you are using the afio file format, compression does not take part on the
 entire stream, but is handled by afio itself on a per file basis. The command
 line for listing such a backup might look like this:
 
-# curl ftp://USER:PASS@YOURSERVER/home-20080411-1349.tar.bz2 \
+# curl ftp://USER:PASS@YOURSERVER/home-20080411-1349.tar.bz2.gpg \
   | gpg --decrypt \
   | afio -Z -P bzip2 -t -
 

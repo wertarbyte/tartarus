@@ -4,7 +4,7 @@
 #            http://wertarbyte.de/tartarus.shtml
 #
 # Last change: $Date$
-declare -r VERSION="0.6.1"
+declare -r VERSION="0.6.2"
 
 CMD_INCREMENTAL="no"
 CMD_UPDATE="no"
@@ -43,7 +43,7 @@ isEnabled() {
 }
 
 requireCommand() {
-    ERROR=0
+    local ERROR=0
     for CMD in $@; do
         which $CMD > /dev/null
         if [ ! $? -eq 0 ]; then
@@ -55,7 +55,7 @@ requireCommand() {
 }
 
 cleanup() {
-    ABORT=$1
+    local ABORT=$1
     hook PRE_CLEANUP
     if [ "$ABORT" -eq "1" ]; then
         debug "Canceling backup procedure and cleaning up..."
@@ -93,13 +93,13 @@ hook() {
 
 # Execute a command and embrace it with hooks
 call() {
-    METHOD="$1"
+    local METHOD="$1"
     shift
     # Hook functions are upper case
-    MHOOK="$(echo "$METHOD" | tr '[:lower:]' '[:upper:]')"
+    local MHOOK="$(echo "$METHOD" | tr '[:lower:]' '[:upper:]')"
     hook "PRE_$MHOOK"
     "$METHOD" "$@"
-    RETURNCODE=$?
+    local RETURNCODE=$?
     if [ "$RETURNCODE" -ne 0 ]; then
         debug "Command '$METHOD $@' failed with exit code $RETURNCODE"
     fi
@@ -109,9 +109,9 @@ call() {
 # We can now check for newer versions of tartarus
 update_check() {
     requireCommand curl awk || return
-    VERSION_URL="http://wertarbyte.de/tartarus/upgrade-$VERSION"
+    local VERSION_URL="http://wertarbyte.de/tartarus/upgrade-$VERSION"
 
-    NEW_VERSION="$(curl -fs "$VERSION_URL")"
+    local NEW_VERSION="$(curl -fs "$VERSION_URL")"
     if [ ! "$?" -eq 0 ]; then
         debug "Error checking version information."
         return 0
@@ -137,6 +137,45 @@ BEGIN {
         return 1
     fi
     return 0
+}
+
+# for splitting up an archive stream, we use this function
+# to read a specified amount of data from a pipe and then
+# return the exit code 1 the size limit has been reached
+# (and there is more data waiting) while returning code 0
+# if there is no data left to read (EOF reached)
+
+readChunk() {
+    local MiB=$1
+    perl -Mbytes -e 'my $l=$ARGV[0]*1024*1024;
+        my $size = 1;
+        $| = 1;
+        while( $r = sysread(STDIN, $foo, $size) ) {
+            print $foo;
+            $l -= $r;
+            exit 1 if $l<$size;
+        }' "$MiB"
+}
+
+chunknstore() {
+    if [ -n "$STORAGE_CHUNK_SIZE" ]; then
+        local CURRENT_CHUNK=1
+        local MORE=1
+        while [ "$MORE" -eq 1 ]; do
+            debug "Processing chunk $CURRENT_CHUNK"
+            readChunk "$STORAGE_CHUNK_SIZE" | storage
+            # Copy PIPESTATUS
+            local STATUS=( ${PIPESTATUS[@]} )
+            MORE=${STATUS[0]}
+            # if storage fails, we have to abort
+            if [ "${STATUS[1]}" -ne 0 ]; then
+                return "${STATUS[1]}"
+            fi
+            let CURRENT_CHUNK++
+        done
+    else
+        storage
+    fi
 }
 
 # Do we only want to check for a new version?
@@ -182,6 +221,9 @@ STORAGE_FTP_SSL_INSECURE="no"
 STORAGE_SSH_DIR=""
 STORAGE_SSH_USER=""
 STORAGE_SSH_SERVER=""
+
+STORAGE_CHUNK_SIZE=""
+
 # Options for incremental backups
 INCREMENTAL_BACKUP="no"
 INCREMENTAL_TIMESTAMP_FILE=""
@@ -283,7 +325,11 @@ constructFilename() {
         BASEDON=$(date -r "$INCREMENTAL_TIMESTAMP_FILE" '+%Y%m%d-%H%M')
         INC="-inc-${BASEDON}"
     fi
-    FILENAME="tartarus-${NAME}-${DATE}${INC}.${ASSEMBLY_METHOD}${ARCHIVE_EXTENSION:-}"
+    CHUNK=""
+    if [ -n "$CURRENT_CHUNK" ]; then
+        CHUNK="chunk-$CURRENT_CHUNK."
+    fi
+    FILENAME="tartarus-${NAME}-${DATE}${INC}.${CHUNK}${ASSEMBLY_METHOD}${ARCHIVE_EXTENSION:-}"
 
     hook FILENAME
     
@@ -295,7 +341,7 @@ if [ -z "$ASSEMBLY_METHOD" -o "$ASSEMBLY_METHOD" == "tar" ]; then
     # use the traditional tar setup
     requireCommand tar || cleanup 1
     collate() {
-        TAROPTS="--no-unquote --no-recursion"
+        local TAROPTS="--no-unquote --no-recursion"
         call tar cp $TAROPTS --null -T -
     }
 elif [ "$ASSEMBLY_METHOD" == "afio" ]; then
@@ -329,15 +375,15 @@ if [ "$STORAGE_METHOD" == "FTP" ]; then
     # define storage procedure
     storage() {
         # stay silent, but print error messages if aborting
-        OPTS="-u $STORAGE_FTP_USER:$STORAGE_FTP_PASSWORD -s -S"
+        local OPTS="-u $STORAGE_FTP_USER:$STORAGE_FTP_PASSWORD -s -S"
         if isEnabled "$STORAGE_FTP_USE_SSL"; then
             OPTS="$OPTS --ftp-ssl"
         fi
         if isEnabled "$STORAGE_FTP_SSL_INSECURE"; then
             OPTS="$OPTS -k"
         fi
-        FILE=$(constructFilename)
-        URL="ftp://$STORAGE_FTP_SERVER/$FILE"
+        local FILE=$(constructFilename)
+        local URL="ftp://$STORAGE_FTP_SERVER/$FILE"
         debug "Uploading backup to $URL..."
         curl $OPTS --upload-file - "$URL"
     }
@@ -351,7 +397,7 @@ elif [ "$STORAGE_METHOD" == "FILE" ]; then
     
     # define storage procedure
     storage() {
-        FILE="$STORAGE_FILE_DIR/$(constructFilename)"
+        local FILE="$STORAGE_FILE_DIR/$(constructFilename)"
         debug "Storing backup to $FILE..."
         cat - > $FILE
     }
@@ -365,13 +411,13 @@ elif [ "$STORAGE_METHOD" == "SSH" ]; then
 
     # define storage procedure
     storage() {
-        FILENAME=$( constructFilename )
+        local FILENAME=$( constructFilename )
         ssh -l "$STORAGE_SSH_USER" "$STORAGE_SSH_SERVER" "cat > $STORAGE_SSH_DIR/$FILENAME"
     }
 elif [ "$STORAGE_METHOD" == "SIMULATE" ]; then
 
     storage() {
-        FILENAME=$( constructFilename )
+        local FILENAME=$( constructFilename )
         debug "Proposed filename is $FILENAME"
         cat - > /dev/null
     }
@@ -541,7 +587,7 @@ call find "$BDIR" $FINDOPTS $EXCLUDES $FINDARGS | \
     call collate | \
     call compression | \
     call encryption | \
-    call storage
+    call chunknstore
 
 BACKUP_FAILURE=$?
 

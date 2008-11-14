@@ -9,7 +9,7 @@
 # WARNING: This script will delete your backup data when called
 # improperly
 #
-# Version 0.6.1
+# Version 0.6.2
 #
 # Last change: $Date$
 
@@ -99,7 +99,7 @@ my @listing = $ftp->ls();
 
 my %delete;
 for my $filename (sort @listing) {
-    if ($filename =~ /^tartarus-(.+?)-([0-9]{4}[01][0-9][0-3][0-9]-[012][0-9][0-9]{2})(?:\.|-inc-([0-9]{4}[01][0-9][0-3][0-9]-[012][0-9][0-9]{2}))?\.(tar|afio)/) {
+    if ($filename =~ /^tartarus-(.+?)-([0-9]{4}[01][0-9][0-3][0-9]-[012][0-9][0-9]{2})(?:\.|-inc-([0-9]{4}[01][0-9][0-3][0-9]-[012][0-9][0-9]{2}))?\.(chunk-[0-9]+\.)?(tar|afio)/) {
         my $profile = $1;
         next unless ($all || $uprofile eq $profile);
         my $date = $2;
@@ -109,7 +109,9 @@ for my $filename (sort @listing) {
         
         if ($age > $days_to_expire) {
             print STDERR "$filename is $age days old, scheduling for deletion\n";
-            $delete{$profile}{$date} = $filename;
+            #$delete{$profile}{$date} = $filename;
+            # add the file name to the candidate list for deletion
+            push @{$delete{$profile}{$date}}, $filename;
         } elsif ($inc && exists $delete{$profile}{$based_on}) {
             # If it is an incremental backup, we have to preserve the full backup it is based on
             print STDERR "Preserving ".$delete{$profile}{$based_on}." for $filename\n";
@@ -119,10 +121,12 @@ for my $filename (sort @listing) {
 }
 
 for my $profile (values %delete) {
-    for my $file (values %$profile) {
-        print STDERR "Removing file $file...\n";
-        unless ($dry_run) {
-            $ftp->delete("$file") || print STDERR "Error removing $file!\n";
+    for my $archive (values %$profile) {
+        for my $file (@$archive) {
+            print STDERR "Removing file $file...\n";
+            unless ($dry_run) {
+                $ftp->delete("$file") || print STDERR "Error removing $file!\n";
+            }
         }
     }
 }

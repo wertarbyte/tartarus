@@ -1,6 +1,6 @@
 Tartarus - A flexible yet simple backup software
 
-Version 0.6.1
+Version 0.6.2
 
 by Stefan Tomanek (stefan.tomanek@wertarbyte.de)
 http://wertarbyte.de/tartarus.shtml
@@ -108,6 +108,12 @@ STORAGE_FTP_SSL_INSECURE
     Valid options:
         * yes
         * no
+
+STORAGE_CHUNK_SIZE
+    The maximum file size (in MiB) the storage medium can handle. If this is set,
+    the backup archive will be split in several files. It can be used to circumvent
+    limitations in old FTP servers or file systems that cannot handle files larger
+    than 2 GiB.
 
 COMPRESSION_METHOD
     The compression method you want to apply to your backup stream.

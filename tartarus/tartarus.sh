@@ -520,8 +520,10 @@ DATE="$(date +%Y%m%d-%H%M)"
 # Let's start with the real work
 debug "syncing..."
 sync
-if ! [ -z "$INCREMENTAL_TIMESTAMP_FILE" ]; then
-    # Create temporary timestamp file
+
+if ! isEnabled "$INCREMENTAL_BACKUP" && [ -n "$INCREMENTAL_TIMESTAMP_FILE" ]; then
+    # Create temporary timestamp file if a location is defined and
+    # we are doing a full backup
     echo $DATE > "${INCREMENTAL_TIMESTAMP_FILE}.running"
 fi
 

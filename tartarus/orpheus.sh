@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # orpheus.sh by Stefan Tomanek <stefan.tomanek@wertarbyte.de>
 #              http://wertarbyte.de/tartarus.shtml
@@ -14,19 +14,23 @@ REQUEST=$2
 
 . $CONFIG
 
+ARCHIVES=$(curl -s -u ${STORAGE_FTP_USER}:${STORAGE_FTP_PASSWORD} --ftp-ssl -k ftp://${STORAGE_FTP_SERVER}/ -l)
+
 awk -vREQUEST="$REQUEST" '
     substr($11,2) == REQUEST {
         n=split(FILENAME, T, "/");
-        LIST=T[n]
-        ARCHIVE=LIST;
-        sub("\\.list$", "", ARCHIVE)
-        print ARCHIVE, substr($11,2);
-    }' "${FILE_LIST_DIRECTORY}"/tartarus-*.list | \
+        LISTNAME=T[n];
+        split(LISTNAME, A, ".");
+        PROFILE=A[1];
+        DATE=A[2];
+        print PROFILE, DATE, substr($11,2);
+    }' "${FILE_LIST_DIRECTORY}"/*.*.list | \
     sort -r | head -n1 | \
-    while read ARCHIVE FILENAME; do
-        echo "Restoring $FILENAME from $ARCHIVE" >&2
+
+    while read PROFILE DATE FILENAME; do
+        echo "$ARCHIVES" | grep "^tartarus-${PROFILE}-${DATE}[.-]"
         # FIXME&TODO Detect archive format, encryption and compression
-        curl -s -u ${STORAGE_FTP_USER}:${STORAGE_FTP_PASSWORD} --ftp-ssl -k ftp://${STORAGE_FTP_SERVER}/${ARCHIVE} | \
-        gpg --decrypt | \
-        afio -v -P bzip2 -Z -y "$REQUEST" -i -
+        #curl -s -u ${STORAGE_FTP_USER}:${STORAGE_FTP_PASSWORD} --ftp-ssl -k ftp://${STORAGE_FTP_SERVER}/${ARCHIVE} | \
+        #gpg --decrypt | \
+        #afio -v -P bzip2 -Z -y "$REQUEST" -i -
     done

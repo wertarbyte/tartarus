@@ -337,7 +337,7 @@ constructFilename() {
 }
 
 constructListFilename() {
-    echo "$(constructFilename).list"
+    echo "${NAME}.${DATE}.list"
 }
 
 # Check backup collation methods

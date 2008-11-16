@@ -22,7 +22,7 @@ awk -vREQUEST="$REQUEST" '
         sub("\\.list$", "", ARCHIVE)
         print ARCHIVE, substr($11,2);
     }' "${FILE_LIST_DIRECTORY}"/tartarus-*.list | \
-    sort -r | \
+    sort -r | head -n1 | \
     while read ARCHIVE FILENAME; do
         echo "Restoring $FILENAME from $ARCHIVE" >&2
         # FIXME&TODO Detect archive format, encryption and compression

@@ -14,6 +14,47 @@ REQUEST=$2
 
 . $CONFIG
 
+function decrypt() {
+    FILE=$1
+    [[ "$FILE" =~ '\.gpg($|\.)' ]] && gpg --decrypt || cat
+}
+function extract() {
+    FILE=$1
+    [[ "$FILE" =~ '\.tar\.bz2($|\.)' ]] && (tar tfvj - "$REQUEST"; return)
+    [[ "$FILE" =~ '\.tar\.gz($|\.)' ]] && (tar tfvz - "$REQUEST"; return)
+    [[ "$FILE" =~ '\.afio\.bz2($|\.)' ]] && (afio -P bzip2 -Z -y "$REQUEST" -v -t -; return)
+    [[ "$FILE" =~ '\.afio\.gz($|\.)' ]] && (afio -P -y "$REQUEST" -v -t -; return)
+    return 1
+}
+
+function detectProperties() {
+    FILE=$1
+
+    echo "Processing $FILE" >&2
+    echo $FILE | (
+        IFS=. read -a PROPS
+        for PROP in ${PROPS[*]}; do
+            case $PROP in
+                afio)
+                    echo "* afio archive" >&2
+                ;;
+                tar)
+                    echo "* tar archive" >&2
+                ;;
+                bz2)
+                    echo "* bzip2 compressed" >&2
+                ;;
+                gz)
+                    echo "* gzip compressed" >&2
+                ;;
+                gpg)
+                    echo "* gpg encrypted" >&2
+                ;;
+            esac
+        done
+    )
+}
+
 ARCHIVES=$(curl -s -u ${STORAGE_FTP_USER}:${STORAGE_FTP_PASSWORD} --ftp-ssl -k ftp://${STORAGE_FTP_SERVER}/ -l)
 
 awk -vREQUEST="$REQUEST" '
@@ -24,13 +65,18 @@ awk -vREQUEST="$REQUEST" '
         PROFILE=A[1];
         DATE=A[2];
         print PROFILE, DATE, substr($11,2);
-    }' "${FILE_LIST_DIRECTORY}"/*.*.list | \
+    }' "${FILE_LIST_DIRECTORY}"/*.[[:digit:]][[:digit:]][[:digit:]][[:digit:]][[:digit:]][[:digit:]][[:digit:]][[:digit:]]-[[:digit:]][[:digit:]][[:digit:]][[:digit:]].list | \
     sort -r | head -n1 | \
 
     while read PROFILE DATE FILENAME; do
-        echo "$ARCHIVES" | grep "^tartarus-${PROFILE}-${DATE}[.-]"
+        NEEDED=$(echo "$ARCHIVES" | grep "^tartarus-${PROFILE}-${DATE}[.-]")
         # FIXME&TODO Detect archive format, encryption and compression
-        #curl -s -u ${STORAGE_FTP_USER}:${STORAGE_FTP_PASSWORD} --ftp-ssl -k ftp://${STORAGE_FTP_SERVER}/${ARCHIVE} | \
-        #gpg --decrypt | \
-        #afio -v -P bzip2 -Z -y "$REQUEST" -i -
+        URLS=""
+        for F in $NEEDED; do
+            URLS="$URLS ftp://${STORAGE_FTP_SERVER}/${F}"
+        done
+        echo "Downloading: $URLS" >&2
+        detectProperties $NEEDED
+        curl -s -u ${STORAGE_FTP_USER}:${STORAGE_FTP_PASSWORD} --ftp-ssl -k $URLS | \
+        decrypt $NEEDED | extract $NEEDED
     done

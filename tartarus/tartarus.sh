@@ -327,9 +327,9 @@ constructFilename() {
     fi
     CHUNK=""
     if [ -n "$CURRENT_CHUNK" ]; then
-        CHUNK="chunk-$CURRENT_CHUNK."
+        CHUNK="chunk-$CURRENT_CHUNK"
     fi
-    FILENAME="tartarus-${NAME}-${DATE}${INC}.${CHUNK}${ASSEMBLY_METHOD}${ARCHIVE_EXTENSION:-}"
+    FILENAME="tartarus-${NAME}-${DATE}${INC}.${ASSEMBLY_METHOD}${ARCHIVE_EXTENSION:-}${CHUNK}"
 
     hook FILENAME
     

@@ -9,7 +9,7 @@
 # WARNING: This script will delete your backup data when called
 # improperly
 #
-# Version 0.6.2
+# Version 0.6.3
 #
 # Last change: $Date$
 

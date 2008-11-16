@@ -4,7 +4,7 @@
 #            http://wertarbyte.de/tartarus.shtml
 #
 # Last change: $Date$
-declare -r VERSION="0.6.2"
+declare -r VERSION="0.6.3"
 
 CMD_INCREMENTAL="no"
 CMD_UPDATE="no"
@@ -148,7 +148,7 @@ BEGIN {
 readChunk() {
     local MiB=$1
     perl -Mbytes -e 'my $l=$ARGV[0]*1024*1024;
-        my $size = 1;
+        my $size = 1024;
         $| = 1;
         while( $r = sysread(STDIN, $foo, $size) ) {
             print $foo;
@@ -334,6 +334,10 @@ constructFilename() {
     hook FILENAME
     
     echo $FILENAME
+}
+
+constructListFilename() {
+    echo "$(constructFilename).list"
 }
 
 # Check backup collation methods
@@ -567,7 +571,7 @@ cd "$BASEDIR"
 WRITE_LIST_FILE=""
 
 if isEnabled "$FILE_LIST_CREATION"; then
-    WRITE_LIST_FILE="-fls $FILE_LIST_DIRECTORY/${NAME}.${DATE}.running"
+    WRITE_LIST_FILE="-fls $FILE_LIST_DIRECTORY/$(constructListFilename).running"
 fi
 
 FINDOPTS=""
@@ -604,9 +608,8 @@ fi
 
 # move list file to its final location
 if isEnabled "$FILE_LIST_CREATION"; then
-    mv "$FILE_LIST_DIRECTORY/${NAME}.${DATE}.running" "$FILE_LIST_DIRECTORY/${NAME}.${DATE}"
+    mv "$FILE_LIST_DIRECTORY/$(constructListFilename).running" "$FILE_LIST_DIRECTORY/$(constructListFilename)"
 fi
-
 
 # If we did a full backup, we might want to update the timestamp file
 if [ ! -z "$INCREMENTAL_TIMESTAMP_FILE" ] && ! isEnabled "$INCREMENTAL_BACKUP"; then

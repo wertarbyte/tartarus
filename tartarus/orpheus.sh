@@ -20,8 +20,8 @@ function decrypt() {
 }
 function extract() {
     FILE=$1
-    [[ "$FILE" =~ '\.tar\.bz2($|\.)' ]] && (tar tfvj - "$REQUEST"; return)
-    [[ "$FILE" =~ '\.tar\.gz($|\.)' ]] && (tar tfvz - "$REQUEST"; return)
+    [[ "$FILE" =~ '\.tar\.bz2($|\.)' ]] && (tar tfvj - ".${REQUEST/#\//./}"; return)
+    [[ "$FILE" =~ '\.tar\.gz($|\.)' ]] && (tar tfvz - "${REQUEST/#\//./}"; return)
     [[ "$FILE" =~ '\.afio\.bz2($|\.)' ]] && (afio -P bzip2 -Z -y "$REQUEST" -v -t -; return)
     [[ "$FILE" =~ '\.afio\.gz($|\.)' ]] && (afio -P -y "$REQUEST" -v -t -; return)
     return 1
@@ -55,7 +55,7 @@ function detectProperties() {
     )
 }
 
-ARCHIVES=$(curl -s -u ${STORAGE_FTP_USER}:${STORAGE_FTP_PASSWORD} --ftp-ssl -k ftp://${STORAGE_FTP_SERVER}/ -l)
+ARCHIVES=$(curl -s -u ${STORAGE_FTP_USER}:${STORAGE_FTP_PASSWORD} --ftp-ssl -k ftp://${STORAGE_FTP_SERVER}/${STORAGE_FTP_DIR} -l)
 
 awk -vREQUEST="$REQUEST" '
     substr($11,2) == REQUEST {
@@ -73,7 +73,7 @@ awk -vREQUEST="$REQUEST" '
         # FIXME&TODO Detect archive format, encryption and compression
         URLS=""
         for F in $NEEDED; do
-            URLS="$URLS ftp://${STORAGE_FTP_SERVER}/${F}"
+            URLS="$URLS ftp://${STORAGE_FTP_SERVER}/${STORAGE_FTP_DIR}/${F}"
         done
         echo "Downloading: $URLS" >&2
         detectProperties $NEEDED

@@ -214,6 +214,7 @@ ASSEMBLY_METHOD="tar"
 STORAGE_METHOD=""
 STORAGE_FILE_DIR=""
 STORAGE_FTP_SERVER=""
+STORAGE_FTP_DIR="/"
 STORAGE_FTP_USER=""
 STORAGE_FTP_PASSWORD=""
 STORAGE_FTP_USE_SSL="no"
@@ -387,7 +388,7 @@ if [ "$STORAGE_METHOD" == "FTP" ]; then
             OPTS="$OPTS -k"
         fi
         local FILE=$(constructFilename)
-        local URL="ftp://$STORAGE_FTP_SERVER/$FILE"
+        local URL="ftp://$STORAGE_FTP_SERVER/$STORAGE_FTP_DIR/$FILE"
         debug "Uploading backup to $URL..."
         curl $OPTS --upload-file - "$URL"
     }

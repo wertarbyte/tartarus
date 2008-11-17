@@ -95,6 +95,9 @@ STORAGE_FTP_USER
 STORAGE_FTP_PASSWORD
     The password for logging into the FTP server.
 
+STORAGE_FTP_DIR
+    The directory of the ftp server the backup is stored in.
+
 STORAGE_FTP_USE_SSL
     Specifies whether to use SSL when connecting to the FTP host.
 

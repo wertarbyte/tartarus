@@ -55,8 +55,14 @@ requireCommand() {
 }
 
 cleanup() {
-    local ABORT=$1
+    local ABORT=${1:-0}
+    local REASON=${2:-""}
     hook PRE_CLEANUP
+
+    if [ -n "$REASON" ]; then
+        debug $REASON
+    fi
+
     if [ "$ABORT" -eq "1" ]; then
         debug "Canceling backup procedure and cleaning up..."
     fi
@@ -104,6 +110,7 @@ call() {
         debug "Command '$METHOD $@' failed with exit code $RETURNCODE"
     fi
     hook "POST_$MHOOK"
+    return $RETURNCODE
 }
 
 # We can now check for newer versions of tartarus
@@ -175,6 +182,8 @@ chunknstore() {
         done
     else
         storage
+        local STORAGE_CODE=$?
+        return $STORAGE_CODE
     fi
 }
 
@@ -270,14 +279,12 @@ fi
 
 # NAME and DIRECTORY are mandatory
 if [ -z "$NAME" -o -z "$DIRECTORY" ]; then
-    debug "NAME and DIRECTORY are mandatory arguments."
-    cleanup 1
+    cleanup 1 "NAME and DIRECTORY are mandatory arguments."
 fi
 
 # Want incremental backups? Specify INCREMENTAL_TIMESTAMP_FILE
 if isEnabled "$INCREMENTAL_BACKUP" && [ ! -e "$INCREMENTAL_TIMESTAMP_FILE"  ]; then
-    debug "Unable to access INCREMENTAL_TIMESTAMP_FILE ($INCREMENTAL_TIMESTAMP_FILE)."
-    cleanup 1
+    cleanup 1 "Unable to access INCREMENTAL_TIMESTAMP_FILE ($INCREMENTAL_TIMESTAMP_FILE)."
 fi
 
 # Do we want to limit the io load?
@@ -289,35 +296,30 @@ fi
 # Do we want a file list?
 if isEnabled "$FILE_LIST_CREATION"; then
     if [ -z "$FILE_LIST_DIRECTORY" -o ! -d "$FILE_LIST_DIRECTORY" ]; then
-        debug "Unable to access FILE_LIST_DIRECTORY ($FILE_LIST_DIRECTORY)."
-        cleanup 1
+        cleanup 1 "Unable to access FILE_LIST_DIRECTORY ($FILE_LIST_DIRECTORY)."
     fi
 fi
 
 # Do we want to freeze the filesystem during the backup run?
 if isEnabled "$CREATE_LVM_SNAPSHOT"; then
     if [ -z "$LVM_VOLUME_NAME" ]; then
-        debug "LVM_VOLUME_NAME is mandatory when using LVM snapshots"
-        cleanup 1
+        cleanup "LVM_VOLUME_NAME is mandatory when using LVM snapshots"
     fi
 
     if [ -z "$LVM_MOUNT_DIR" ]; then
-        debug "LVM_MOUNT_DIR is mandatory when using LVM snapshots"
-        cleanup 1
+        cleanup 1 "LVM_MOUNT_DIR is mandatory when using LVM snapshots"
     fi
 
     requireCommand lvdisplay lvcreate lvremove || cleanup 1
 
     # Check whether $LVM_VOLUME_NAME is a valid logical volume
     if ! lvdisplay "$LVM_VOLUME_NAME" > /dev/null; then
-        debug "'$LVM_VOLUME_NAME' is not a valid LVM volume."
-        cleanup 1
+        cleanup 1"'$LVM_VOLUME_NAME' is not a valid LVM volume."
     fi
 
     # Check whether we have a direcory to mount the snapshot to
     if ! [ -d "$SNAPSHOT_DIR" ]; then
-        debug "Snapshot directory '$SNAPSHOT_DIR' not found."
-        cleanup 1
+        cleanup 1 "Snapshot directory '$SNAPSHOT_DIR' not found."
     fi
 fi
 
@@ -364,15 +366,13 @@ elif [ "$ASSEMBLY_METHOD" == "afio" ]; then
         call afio -o $AFIO_OPTIONS -0 -
     }
 else
-    debug "Unknown ASSEMBLY_METHOD '$ASSEMBLY_METHOD' specified"
-    cleanup 1
+    cleanup 1 "Unknown ASSEMBLY_METHOD '$ASSEMBLY_METHOD' specified"
 fi
 
 # Check backup storage options
 if [ "$STORAGE_METHOD" == "FTP" ]; then
     if [ -z "$STORAGE_FTP_SERVER" -o -z "$STORAGE_FTP_USER" -o -z "$STORAGE_FTP_PASSWORD" ]; then
-        debug "If FTP is used, STORAGE_FTP_SERVER, STORAGE_FTP_USER and STORAGE_FTP_PASSWORD are mandatory."
-        cleanup 1
+        cleanup 1 "If FTP is used, STORAGE_FTP_SERVER, STORAGE_FTP_USER and STORAGE_FTP_PASSWORD are mandatory."
     fi
     
     requireCommand curl || cleanup 1
@@ -394,8 +394,7 @@ if [ "$STORAGE_METHOD" == "FTP" ]; then
     }
 elif [ "$STORAGE_METHOD" == "FILE" ]; then
     if [ -z "$STORAGE_FILE_DIR" -a -d "$STORAGE_FILE_DIR" ]; then
-        debug "If file storage is used, STORAGE_FILE_DIR is mandatory and must exist."
-        cleanup 1
+        cleanup 1 "If file storage is used, STORAGE_FILE_DIR is mandatory and must exist."
     fi
     
     requireCommand cat || cleanup 1
@@ -408,8 +407,7 @@ elif [ "$STORAGE_METHOD" == "FILE" ]; then
     }
 elif [ "$STORAGE_METHOD" == "SSH" ]; then
     if [ -z "$STORAGE_SSH_SERVER" -o -z "$STORAGE_SSH_USER" -o -z "$STORAGE_SSH_DIR" ]; then
-        debug "If SSH storage is used, STORAGE_SSH_SERVER, STORAGE_SSH_USER and STORAGE_SSH_DIR are mandatory."
-        cleanup 1
+        cleanup 1 "If SSH storage is used, STORAGE_SSH_SERVER, STORAGE_SSH_USER and STORAGE_SSH_DIR are mandatory."
     fi
     
     requireCommand ssh || cleanup 1
@@ -428,15 +426,13 @@ elif [ "$STORAGE_METHOD" == "SIMULATE" ]; then
     }
 elif [ "$STORAGE_METHOD" == "CUSTOM" ]; then
     if ! type "TARTARUS_CUSTOM_STORAGE_METHOD" &> /dev/null; then
-        debug "If custom storage is used, a function TARTARUS_CUSTOM_STORAGE_METHOD has to be defined."
-        cleanup 1
+        cleanup 1 "If custom storage is used, a function TARTARUS_CUSTOM_STORAGE_METHOD has to be defined."
     fi
     storage() {
         TARTARUS_CUSTOM_STORAGE
     }
 else
-    debug "No valid STORAGE_METHOD defined."
-    cleanup 1
+    cleanup 1 "No valid STORAGE_METHOD defined."
 fi
 
 # compression method that does nothing
@@ -468,8 +464,7 @@ encryption() {
 
 # We can only use one method of encryption at once
 if isEnabled "$ENCRYPT_SYMMETRICALLY" && isEnabled "$ENCRYPT_ASYMMETRICALLY"; then
-    debug "ENCRYPT_SYMMETRICALLY and ENCRYPT_ASYMMETRICALLY are mutually exclusive."
-    cleanup 1
+    cleanup 1 "ENCRYPT_SYMMETRICALLY and ENCRYPT_ASYMMETRICALLY are mutually exclusive."
 fi
 
 GPGOPTIONS="--batch --no-use-agent --no-tty --trust-model always $ENCRYPT_GPG_OPTIONS"
@@ -479,8 +474,7 @@ if isEnabled "$ENCRYPT_SYMMETRICALLY"; then
 
     # Can we access the passphrase file?
     if ! [ -r "$ENCRYPT_PASSPHRASE_FILE" ]; then
-        debug "ENCRYPT_PASSPHRASE_FILE '$ENCRYPT_PASSPHRASE_FILE' is not readable."
-        cleanup 1
+        cleanup 1 "ENCRYPT_PASSPHRASE_FILE '$ENCRYPT_PASSPHRASE_FILE' is not readable."
     else
         ARCHIVE_EXTENSION="$ARCHIVE_EXTENSION.gpg"
         encryption() {
@@ -497,14 +491,12 @@ if isEnabled "$ENCRYPT_ASYMMETRICALLY"; then
         if [ -f "$ENCRYPT_KEYRING" ]; then
             GPGOPTIONS=$GPGOPTIONS' --keyring '$ENCRYPT_KEYRING
         else
-            debug "ENCRYPT_KEYRING '$ENCRYPT_KEYRING' specified but not found."
-            cleanup 1
+            cleanup 1 "ENCRYPT_KEYRING '$ENCRYPT_KEYRING' specified but not found."
         fi
     fi
     # Can we find the key id?
     if ! gpg $GPGOPTIONS --list-key "$ENCRYPT_KEY_ID" >/dev/null 2>&1; then
-        debug "Unable to find ENCRYPT_KEY_ID '$ENCRYPT_KEY_ID'."
-        cleanup 1
+        cleanup 1 "Unable to find ENCRYPT_KEY_ID '$ENCRYPT_KEY_ID'."
     else
         ARCHIVE_EXTENSION="$ARCHIVE_EXTENSION.gpg"
         encryption() {
@@ -519,7 +511,7 @@ fi
 hook POST_CONFIGVERIFY
 
 # Make sure we clean up if the user aborts
-trap "cleanup 1" INT
+trap "cleanup 1 'canceled by user interruption'" INT
 
 DATE="$(date +%Y%m%d-%H%M)"
 # Let's start with the real work
@@ -538,12 +530,12 @@ if isEnabled "$CREATE_LVM_SNAPSHOT"; then
     # Call the hook script
     hook PRE_FREEZE
 
-    lvcreate --size $LVM_SNAPSHOT_SIZE --snapshot --name ${LVM_VOLUME_NAME}_snap $LVM_VOLUME_NAME || (debug "Unable to create snapshot, aborting"; cleanup 1)
+    lvcreate --size $LVM_SNAPSHOT_SIZE --snapshot --name ${LVM_VOLUME_NAME}_snap $LVM_VOLUME_NAME || cleanup 1 "Unable to create snapshot"
     # and another hook
     hook POST_FREEZE
     # mount the new volume
-    mkdir -p "$SNAPSHOT_DIR/$LVM_MOUNT_DIR" || (debug "Unable to create mountpoint, aborting"; cleanup 1)
-    mount "$SNAPDEV" "$SNAPSHOT_DIR/$LVM_MOUNT_DIR" || (debug "Unable to mount snapshot, aborting"; cleanup 1)
+    mkdir -p "$SNAPSHOT_DIR/$LVM_MOUNT_DIR" || cleanup 1 "Unable to create mountpoint"
+    mount "$SNAPDEV" "$SNAPSHOT_DIR/$LVM_MOUNT_DIR" || cleanup 1 "Unable to mount snapshot"
     BASEDIR="$SNAPSHOT_DIR"
 fi
 
@@ -603,8 +595,7 @@ hook POST_STORE
 cd $OLDDIR
 
 if [ ! "$BACKUP_FAILURE" -eq 0 ]; then
-    debug "ERROR creating/processing/storing backup, check above messages"
-    cleanup 1
+    cleanup 1 "ERROR creating/processing/storing backup, check above messages"
 fi
 
 # move list file to its final location

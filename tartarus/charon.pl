@@ -114,7 +114,9 @@ for my $filename (sort @listing) {
             push @{$delete{$profile}{$date}}, $filename;
         } elsif ($inc && exists $delete{$profile}{$based_on}) {
             # If it is an incremental backup, we have to preserve the full backup it is based on
-            print STDERR "Preserving ".$delete{$profile}{$based_on}." for $filename\n";
+            for my $i (@{ $delete{$profile}{$based_on} }) {
+                print STDERR "Preserving ".$i." for $filename\n";
+            }
             delete $delete{$profile}{$based_on};
         }
     }

@@ -4,7 +4,7 @@
 #            http://wertarbyte.de/tartarus.shtml
 #
 # Last change: $Date$
-declare -r VERSION="0.6.3"
+declare -r VERSION="0.6.3.xp"
 
 CMD_INCREMENTAL="no"
 CMD_UPDATE="no"
@@ -350,6 +350,14 @@ if [ -z "$ASSEMBLY_METHOD" -o "$ASSEMBLY_METHOD" == "tar" ]; then
     collate() {
         local TAROPTS="--no-unquote --no-recursion"
         call tar cp $TAROPTS --null -T -
+        local EXITCODE=$?
+        # exit code 1 means that some files have changed while backing them
+        # up, we think that is OK for now
+        if [ $EXITCODE -eq 1 ]; then
+            debug "Some files changed during the backup process, proceeding anyway"
+            return 0
+        fi
+        return $EXITCODE
     }
 elif [ "$ASSEMBLY_METHOD" == "afio" ]; then
     # afio is the new hotness

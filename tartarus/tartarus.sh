@@ -362,7 +362,8 @@ if [ -z "$ASSEMBLY_METHOD" -o "$ASSEMBLY_METHOD" == "tar" ]; then
 elif [ "$ASSEMBLY_METHOD" == "afio" ]; then
     # afio is the new hotness
     requireCommand afio || cleanup 1
-    AFIO_OPTIONS=""
+    # compress all files and ignore errors regarding archive compatibility
+    AFIO_OPTIONS="-2 0 -1 mC"
     if [ "$COMPRESSION_METHOD" == "gzip" ]; then
         AFIO_OPTIONS="$AFIO_OPTIONS -Z -P gzip"
         ARCHIVE_EXTENSION=".gz"

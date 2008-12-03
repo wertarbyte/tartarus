@@ -4,16 +4,16 @@
 #            http://wertarbyte.de/tartarus.shtml
 #
 # Last change: $Date$
-declare -r VERSION="0.6.3.xp"
+readonly VERSION="0.6.3.xp"
 
 CMD_INCREMENTAL="no"
 CMD_UPDATE="no"
 PROFILE=""
 # check command line
-while ! [ "$1" == "" ]; do
-    if [ "$1" == "-i" -o "$1" == "--inc" ]; then
+while ! [ "$1" = "" ]; do
+    if [ "$1" = "-i" ] || [ "$1" = "--inc" ]; then
         CMD_INCREMENTAL="yes"
-    elif [ "$1" == "-u" -o "$1" == "--update" ]; then
+    elif [ "$1" = "-u" ] || [ "$1" = "--update" ]; then
         CMD_UPDATE="yes"
     else
         PROFILE=$1
@@ -46,7 +46,7 @@ requireCommand() {
     local ERROR=0
     for CMD in $@; do
         which $CMD > /dev/null
-        if [ ! $? -eq 0 ]; then
+        if [ $? -ne 0 ]; then
             echo "Unable to locate command '$CMD'"
             ERROR=1
         fi
@@ -90,7 +90,7 @@ hook() {
     # debug "Searching for $HOOK"
     shift
     # is there a defined hook function?
-    if type "$HOOK" &> /dev/null; then
+    if type "$HOOK" > /dev/null 2>&1; then
         debug "Executing $HOOK"
         "$HOOK" "$@"
     fi
@@ -119,7 +119,7 @@ update_check() {
     local VERSION_URL="http://wertarbyte.de/tartarus/upgrade-$VERSION"
 
     local NEW_VERSION="$(curl -fs "$VERSION_URL")"
-    if [ ! "$?" -eq 0 ]; then
+    if [ "$?" -ne 0 ]; then
         debug "Error checking version information."
         return 0
     fi
@@ -278,12 +278,12 @@ if isEnabled "$CHECK_FOR_UPDATE"; then
 fi
 
 # NAME and DIRECTORY are mandatory
-if [ -z "$NAME" -o -z "$DIRECTORY" ]; then
+if [ -z "$NAME" ] || [ -z "$DIRECTORY" ]; then
     cleanup 1 "NAME and DIRECTORY are mandatory arguments."
 fi
 
 # Want incremental backups? Specify INCREMENTAL_TIMESTAMP_FILE
-if isEnabled "$INCREMENTAL_BACKUP" && [ ! -e "$INCREMENTAL_TIMESTAMP_FILE"  ]; then
+if isEnabled "$INCREMENTAL_BACKUP" && ! [ -r "$INCREMENTAL_TIMESTAMP_FILE" ]; then
     cleanup 1 "Unable to access INCREMENTAL_TIMESTAMP_FILE ($INCREMENTAL_TIMESTAMP_FILE)."
 fi
 
@@ -295,7 +295,7 @@ fi
 
 # Do we want a file list?
 if isEnabled "$FILE_LIST_CREATION"; then
-    if [ -z "$FILE_LIST_DIRECTORY" -o ! -d "$FILE_LIST_DIRECTORY" ]; then
+    if [ -z "$FILE_LIST_DIRECTORY" ] || ! [ -d "$FILE_LIST_DIRECTORY" ]; then
         cleanup 1 "Unable to access FILE_LIST_DIRECTORY ($FILE_LIST_DIRECTORY)."
     fi
 fi
@@ -344,7 +344,7 @@ constructListFilename() {
 }
 
 # Check backup collation methods
-if [ -z "$ASSEMBLY_METHOD" -o "$ASSEMBLY_METHOD" == "tar" ]; then
+if [ -z "$ASSEMBLY_METHOD" ] || [ "$ASSEMBLY_METHOD" = "tar" ]; then
     # use the traditional tar setup
     requireCommand tar || cleanup 1
     collate() {
@@ -359,15 +359,15 @@ if [ -z "$ASSEMBLY_METHOD" -o "$ASSEMBLY_METHOD" == "tar" ]; then
         fi
         return $EXITCODE
     }
-elif [ "$ASSEMBLY_METHOD" == "afio" ]; then
+elif [ "$ASSEMBLY_METHOD" = "afio" ]; then
     # afio is the new hotness
     requireCommand afio || cleanup 1
     # compress all files and ignore errors regarding archive compatibility
     AFIO_OPTIONS="-2 0 -1 mC"
-    if [ "$COMPRESSION_METHOD" == "gzip" ]; then
+    if [ "$COMPRESSION_METHOD" = "gzip" ]; then
         AFIO_OPTIONS="$AFIO_OPTIONS -Z -P gzip"
         ARCHIVE_EXTENSION=".gz"
-    elif [ "$COMPRESSION_METHOD" == "bzip2" ]; then
+    elif [ "$COMPRESSION_METHOD" = "bzip2" ]; then
         AFIO_OPTIONS="$AFIO_OPTIONS -Z -P bzip2"
         ARCHIVE_EXTENSION=".bz2"
     fi
@@ -379,8 +379,8 @@ else
 fi
 
 # Check backup storage options
-if [ "$STORAGE_METHOD" == "FTP" ]; then
-    if [ -z "$STORAGE_FTP_SERVER" -o -z "$STORAGE_FTP_USER" -o -z "$STORAGE_FTP_PASSWORD" ]; then
+if [ "$STORAGE_METHOD" = "FTP" ]; then
+    if [ -z "$STORAGE_FTP_SERVER" ] || [ -z "$STORAGE_FTP_USER" ] || [ -z "$STORAGE_FTP_PASSWORD" ]; then
         cleanup 1 "If FTP is used, STORAGE_FTP_SERVER, STORAGE_FTP_USER and STORAGE_FTP_PASSWORD are mandatory."
     fi
     
@@ -401,8 +401,8 @@ if [ "$STORAGE_METHOD" == "FTP" ]; then
         debug "Uploading backup to $URL..."
         curl $OPTS --upload-file - "$URL"
     }
-elif [ "$STORAGE_METHOD" == "FILE" ]; then
-    if [ -z "$STORAGE_FILE_DIR" -a -d "$STORAGE_FILE_DIR" ]; then
+elif [ "$STORAGE_METHOD" = "FILE" ]; then
+    if [ -z "$STORAGE_FILE_DIR" ] && [ -d "$STORAGE_FILE_DIR" ]; then
         cleanup 1 "If file storage is used, STORAGE_FILE_DIR is mandatory and must exist."
     fi
     
@@ -414,8 +414,8 @@ elif [ "$STORAGE_METHOD" == "FILE" ]; then
         debug "Storing backup to $FILE..."
         cat - > $FILE
     }
-elif [ "$STORAGE_METHOD" == "SSH" ]; then
-    if [ -z "$STORAGE_SSH_SERVER" -o -z "$STORAGE_SSH_USER" -o -z "$STORAGE_SSH_DIR" ]; then
+elif [ "$STORAGE_METHOD" = "SSH" ]; then
+    if [ -z "$STORAGE_SSH_SERVER" ] || [ -z "$STORAGE_SSH_USER" ] || [ -z "$STORAGE_SSH_DIR" ]; then
         cleanup 1 "If SSH storage is used, STORAGE_SSH_SERVER, STORAGE_SSH_USER and STORAGE_SSH_DIR are mandatory."
     fi
     
@@ -426,14 +426,14 @@ elif [ "$STORAGE_METHOD" == "SSH" ]; then
         local FILENAME=$( constructFilename )
         ssh -l "$STORAGE_SSH_USER" "$STORAGE_SSH_SERVER" "cat > $STORAGE_SSH_DIR/$FILENAME"
     }
-elif [ "$STORAGE_METHOD" == "SIMULATE" ]; then
+elif [ "$STORAGE_METHOD" = "SIMULATE" ]; then
 
     storage() {
         local FILENAME=$( constructFilename )
         debug "Proposed filename is $FILENAME"
         cat - > /dev/null
     }
-elif [ "$STORAGE_METHOD" == "CUSTOM" ]; then
+elif [ "$STORAGE_METHOD" = "CUSTOM" ]; then
     if ! type "TARTARUS_CUSTOM_STORAGE_METHOD" &> /dev/null; then
         cleanup 1 "If custom storage is used, a function TARTARUS_CUSTOM_STORAGE_METHOD has to be defined."
     fi
@@ -451,13 +451,13 @@ compression() {
 
 # afio handles compression by itself
 if [ "$ASSEMBLY_METHOD" != "afio" ]; then
-    if [ "$COMPRESSION_METHOD" == "bzip2" ]; then
+    if [ "$COMPRESSION_METHOD" = "bzip2" ]; then
         requireCommand bzip2 || cleanup 1
         compression() {
             bzip2
         }
         ARCHIVE_EXTENSION=".bz2"
-    elif [ "$COMPRESSION_METHOD" == "gzip" ]; then
+    elif [ "$COMPRESSION_METHOD" = "gzip" ]; then
         requireCommand gzip || cleanup 1
         compression() {
             gzip
@@ -603,7 +603,7 @@ hook POST_STORE
 
 cd $OLDDIR
 
-if [ ! "$BACKUP_FAILURE" -eq 0 ]; then
+if [ "$BACKUP_FAILURE" -ne 0 ]; then
     cleanup 1 "ERROR creating/processing/storing backup, check above messages"
 fi
 
@@ -613,7 +613,7 @@ if isEnabled "$FILE_LIST_CREATION"; then
 fi
 
 # If we did a full backup, we might want to update the timestamp file
-if [ ! -z "$INCREMENTAL_TIMESTAMP_FILE" ] && ! isEnabled "$INCREMENTAL_BACKUP"; then
+if ! [ -z "$INCREMENTAL_TIMESTAMP_FILE" ] && ! isEnabled "$INCREMENTAL_BACKUP"; then
     if [ -e "$INCREMENTAL_TIMESTAMP_FILE" ]; then
         OLDDATE=$(< $INCREMENTAL_TIMESTAMP_FILE)
         cp -a "$INCREMENTAL_TIMESTAMP_FILE" "$INCREMENTAL_TIMESTAMP_FILE.$OLDDATE"

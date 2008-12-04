@@ -154,14 +154,17 @@ BEGIN {
 
 readChunk() {
     local MiB=$1
-    perl -Mbytes -e 'my $l=$ARGV[0]*1024*1024;
-        my $size = 1024;
+    perl -Mbytes -e 'my $limit=$ARGV[0]*1024*1024;
+        my $max_size = 1024;
         $| = 1;
-        while( $r = sysread(STDIN, $foo, $size) ) {
-            print $foo;
-            $l -= $r;
-            exit 1 if $l<$size;
-        }' "$MiB"
+        my $data;
+        while( my $r = sysread(STDIN, $data, $max_size) ) {
+            print $data;
+            $limit -= $r;
+            $max_size = $limit if $limit < $max_size;
+            exit 1 if $limit == 0;
+        }
+        exit 0;' "$MiB"
 }
 
 chunknstore() {
@@ -178,7 +181,7 @@ chunknstore() {
             if [ "${STATUS[1]}" -ne 0 ]; then
                 return "${STATUS[1]}"
             fi
-            let CURRENT_CHUNK++
+            CURRENT_CHUNK=$(($CURRENT_CHUNK + 1))
         done
     else
         storage
@@ -434,7 +437,7 @@ elif [ "$STORAGE_METHOD" = "SIMULATE" ]; then
         cat - > /dev/null
     }
 elif [ "$STORAGE_METHOD" = "CUSTOM" ]; then
-    if ! type "TARTARUS_CUSTOM_STORAGE_METHOD" &> /dev/null; then
+    if ! type "TARTARUS_CUSTOM_STORAGE_METHOD" > /dev/null 2>&1; then
         cleanup 1 "If custom storage is used, a function TARTARUS_CUSTOM_STORAGE_METHOD has to be defined."
     fi
     storage() {
@@ -615,7 +618,7 @@ fi
 # If we did a full backup, we might want to update the timestamp file
 if ! [ -z "$INCREMENTAL_TIMESTAMP_FILE" ] && ! isEnabled "$INCREMENTAL_BACKUP"; then
     if [ -e "$INCREMENTAL_TIMESTAMP_FILE" ]; then
-        OLDDATE=$(< $INCREMENTAL_TIMESTAMP_FILE)
+        OLDDATE=$(cat $INCREMENTAL_TIMESTAMP_FILE)
         cp -a "$INCREMENTAL_TIMESTAMP_FILE" "$INCREMENTAL_TIMESTAMP_FILE.$OLDDATE"
     fi
     mv "${INCREMENTAL_TIMESTAMP_FILE}.running" "$INCREMENTAL_TIMESTAMP_FILE"

@@ -333,7 +333,7 @@ constructFilename() {
     fi
     local CHUNK=""
     if [ -n "$CURRENT_CHUNK" ]; then
-        CHUNK="chunk-$CURRENT_CHUNK"
+        CHUNK=".chunk-$CURRENT_CHUNK"
     fi
     local FILENAME="tartarus-${NAME}-${DATE}${INC}.${ASSEMBLY_METHOD}${ARCHIVE_EXTENSION:-}${CHUNK}"
 

@@ -332,6 +332,10 @@ TARTARUS_CUSTOM_STORAGE_METHOD() {
   ssh $USER@$HOST "cat > ~/$FILENAME"
 }
 
+Any exit code except 0 is considered an error and will abort the backup process. If the
+archive is to be split into multiple chunks, the storage method might be called more than
+once.
+
 == Tartarus processing hooks
 
 For special configuration purposes, the Tartarus scripts offers special hooks

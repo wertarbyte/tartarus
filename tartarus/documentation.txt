@@ -1,6 +1,6 @@
 Tartarus - A flexible yet simple backup software
 
-Version 0.6.3
+Version 0.6.3.xp.2
 
 by Stefan Tomanek (stefan.tomanek@wertarbyte.de)
 http://wertarbyte.de/tartarus.shtml
@@ -81,6 +81,12 @@ STORAGE_METHOD
             Store the backup archive as a file on the local system.
         * FTP
             Save the backups archive to an FTP server.
+        * SIMULATE
+            Don't actually save the file, but send it to /dev/null
+        * CUSTOM
+            Allows you to specify a custom storage method by defining a shell
+            function named "TARTARUS_CUSTOM_STORAGE_METHOD". See below for an
+            example that uses SSH to transmit the backup to a remote location.
 
 STORAGE_FILE_DIR
     If STORAGE_METHOD is set to "FILE", this variable specifies the directory
@@ -305,6 +311,26 @@ line for listing such a backup might look like this:
 
 To restore incremental backups, just restore the last full backup as well as the
 most recent incremental one.
+
+== Defining a custom storage method
+
+Tartarus supports the creation of custom storage methods. No changes to the program
+are necessary to achieve this: Simply set the storage method in the configuration file
+to "CUSTOM":
+
+STORAGE_METHOD="CUSTOM"
+
+Then define a shell function with the name "TARTARUS_CUSTOM_STORAGE_METHOD". The method
+should read the backup data from STDIN, while the proposed archive filename is stored in
+the shell variable "$FILENAME". The following example uses the secure shell to transmit
+the archive to a remote location:
+
+TARTARUS_CUSTOM_STORAGE_METHOD() {
+  local USER="stefan"
+  local HOST="zirkel.wertarbyte.de"
+  debug "Sending backup to $USER@$HOST:~/$FILENAME through SSH..."
+  ssh $USER@$HOST "cat > ~/$FILENAME"
+}
 
 == Tartarus processing hooks
 

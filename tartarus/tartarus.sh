@@ -4,7 +4,7 @@
 #            http://wertarbyte.de/tartarus.shtml
 #
 # Last change: $Date$
-readonly VERSION="0.6.3.xp"
+readonly VERSION="0.6.3.xp.2"
 
 CMD_INCREMENTAL="no"
 CMD_UPDATE="no"
@@ -22,13 +22,13 @@ while ! [ "$1" = "" ]; do
 done
 
 debug() {
-    DEBUGMSG="$*"
+    local DEBUGMSG="$*"
     hook DEBUG
     echo $DEBUGMSG >&2
 }
 
 isEnabled() {
-    V="$1"
+    local V="$1"
     case "$V" in
         yes|YES|1|on|ON|true|enabled)
             return 0
@@ -44,6 +44,7 @@ isEnabled() {
 
 requireCommand() {
     local ERROR=0
+    local CMD
     for CMD in $@; do
         which $CMD > /dev/null
         if [ $? -ne 0 ]; then
@@ -82,17 +83,19 @@ cleanup() {
 # of new hooks to avoid loops
 HOOKS_ENABLED=1
 hook() {
+    local HOOK_NAME="$1"
+
     if [ "$HOOKS_ENABLED" -ne 1 ]; then
         return
     fi
     HOOKS_ENABLED=0
-    HOOK="TARTARUS_$1_HOOK"
-    # debug "Searching for $HOOK"
+    local CURRENT_HOOK="TARTARUS_${HOOK_NAME}_HOOK"
+    # shift to pass on hook arguments
     shift
     # is there a defined hook function?
-    if type "$HOOK" > /dev/null 2>&1; then
-        debug "Executing $HOOK"
-        "$HOOK" "$@"
+    if type "$CURRENT_HOOK" > /dev/null 2>&1; then
+        debug "Executing $CURRENT_HOOK"
+        "$CURRENT_HOOK" "$@"
     fi
     HOOKS_ENABLED=1
 }
@@ -221,7 +224,6 @@ ASSEMBLY_METHOD="tar"
 # Valid methods are:
 # * FTP
 # * FILE
-# * SSH
 # * SIMULATE
 STORAGE_METHOD=""
 STORAGE_FILE_DIR=""
@@ -231,9 +233,6 @@ STORAGE_FTP_USER=""
 STORAGE_FTP_PASSWORD=""
 STORAGE_FTP_USE_SSL="no"
 STORAGE_FTP_SSL_INSECURE="no"
-STORAGE_SSH_DIR=""
-STORAGE_SSH_USER=""
-STORAGE_SSH_SERVER=""
 
 STORAGE_CHUNK_SIZE=""
 
@@ -327,15 +326,16 @@ if isEnabled "$CREATE_LVM_SNAPSHOT"; then
 fi
 
 constructFilename() {
+    local INC=""
     if isEnabled "$INCREMENTAL_BACKUP"; then
-        BASEDON=$(date -r "$INCREMENTAL_TIMESTAMP_FILE" '+%Y%m%d-%H%M')
+        local BASEDON=$(date -r "$INCREMENTAL_TIMESTAMP_FILE" '+%Y%m%d-%H%M')
         INC="-inc-${BASEDON}"
     fi
-    CHUNK=""
+    local CHUNK=""
     if [ -n "$CURRENT_CHUNK" ]; then
         CHUNK="chunk-$CURRENT_CHUNK"
     fi
-    FILENAME="tartarus-${NAME}-${DATE}${INC}.${ASSEMBLY_METHOD}${ARCHIVE_EXTENSION:-}${CHUNK}"
+    local FILENAME="tartarus-${NAME}-${DATE}${INC}.${ASSEMBLY_METHOD}${ARCHIVE_EXTENSION:-}${CHUNK}"
 
     hook FILENAME
     
@@ -417,20 +417,7 @@ elif [ "$STORAGE_METHOD" = "FILE" ]; then
         debug "Storing backup to $FILE..."
         cat - > $FILE
     }
-elif [ "$STORAGE_METHOD" = "SSH" ]; then
-    if [ -z "$STORAGE_SSH_SERVER" ] || [ -z "$STORAGE_SSH_USER" ] || [ -z "$STORAGE_SSH_DIR" ]; then
-        cleanup 1 "If SSH storage is used, STORAGE_SSH_SERVER, STORAGE_SSH_USER and STORAGE_SSH_DIR are mandatory."
-    fi
-    
-    requireCommand ssh || cleanup 1
-
-    # define storage procedure
-    storage() {
-        local FILENAME=$( constructFilename )
-        ssh -l "$STORAGE_SSH_USER" "$STORAGE_SSH_SERVER" "cat > $STORAGE_SSH_DIR/$FILENAME"
-    }
 elif [ "$STORAGE_METHOD" = "SIMULATE" ]; then
-
     storage() {
         local FILENAME=$( constructFilename )
         debug "Proposed filename is $FILENAME"
@@ -441,7 +428,8 @@ elif [ "$STORAGE_METHOD" = "CUSTOM" ]; then
         cleanup 1 "If custom storage is used, a function TARTARUS_CUSTOM_STORAGE_METHOD has to be defined."
     fi
     storage() {
-        TARTARUS_CUSTOM_STORAGE
+        local FILENAME=$( constructFilename )
+        TARTARUS_CUSTOM_STORAGE_METHOD
     }
 else
     cleanup 1 "No valid STORAGE_METHOD defined."

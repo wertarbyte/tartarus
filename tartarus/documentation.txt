@@ -1,6 +1,6 @@
 Tartarus - A flexible yet simple backup software
 
-Version 0.6.4
+Version 0.6.4.1
 
 by Stefan Tomanek (stefan.tomanek@wertarbyte.de)
 http://wertarbyte.de/tartarus.shtml
@@ -186,8 +186,10 @@ LIMIT_DISK_IO
 
 CHECK_FOR_UPDATE
     Tartarus checks whether a new version of the script is available. It will
-    then print as message about it and continue with the backup. To disable
-    this behaviour, set this variable to "no".
+    then print a message about it and continue with the backup. It will also
+    download the changelog and enumerate the differences between the current
+    version and the most recent one available. To disable this behaviour, set
+    this variable to "no".
 
     Valid options:
         * yes

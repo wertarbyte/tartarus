@@ -4,7 +4,7 @@
 #            http://wertarbyte.de/tartarus.shtml
 #
 # Last change: $Date$
-readonly VERSION="0.6.4"
+readonly VERSION="0.6.4.1"
 
 CMD_INCREMENTAL="no"
 CMD_UPDATE="no"
@@ -24,7 +24,7 @@ done
 debug() {
     local DEBUGMSG="$*"
     hook DEBUG
-    echo $DEBUGMSG >&2
+    echo "$DEBUGMSG" >&2
 }
 
 isEnabled() {
@@ -120,6 +120,7 @@ call() {
 update_check() {
     requireCommand curl awk || return
     local VERSION_URL="http://wertarbyte.de/tartarus/upgrade-$VERSION"
+    local CHANGELOG_URL="http://wertarbyte.de/tartarus/current/changes.txt-$VERSION"
 
     local NEW_VERSION="$(curl -fs "$VERSION_URL")"
     if [ "$?" -ne 0 ]; then
@@ -144,6 +145,16 @@ BEGIN {
         debug "!!! This script is probably outdated !!!"
         debug "An upgrade to version $NEW_VERSION is available. Please visit http://wertarbyte.de/tartarus.shtml"
         debug ""
+        debug "Changes from this version on:"
+        # display changelog
+        curl -sL "$CHANGELOG_URL" | awk -vCURRENT="$VERSION" '
+            $0 ~ "(^== "CURRENT" ==( |$))|(^-- $)" {
+                FINISHED=1
+            }
+            !FINISHED {
+                print $0;
+            }
+        ' | while IFS='' read LINE; do debug "$LINE"; done
         return 1
     fi
     return 0

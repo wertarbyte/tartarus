@@ -1,3 +1,8 @@
+
+== 0.6.4.1 == 2008-12-12 00:17:08 +0100
+* Tartarus now displays the relevant changelog lines while checking
+  for a new version of itself
+
 == 0.6.4 == 2008-12-11 14:45:40 +0100
 * general code cleanups
 * removed the (undocumented) SSH storage option, which can now be

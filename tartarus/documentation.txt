@@ -145,9 +145,10 @@ ENCRYPT_PASSPHRASE_FILE
     needed to restore the backup, so you better write it down.
 
 ENCRYPT_ASYMMETRICALLY
-    If enabled, the backup data will be encrypted using the public key specified
-    by ENCRYPT_KEY_ID. ENCRYPT_SYMMETRICALLY and ENCRYPT_ASYMMETRICALLY are mutually
-    exclusive.
+    If enabled, the backup data will be encrypted using the public key
+    specified by ENCRYPT_KEY_ID. If both ENCRYPT_SYMMETRICALLY and
+    ENCRYPT_ASYMMETRICALLY are enabled, decryption will be possible with the
+    private key or the supplied passphrase (one of them is sufficient).
 
     Valid options:
         * yes
@@ -179,10 +180,18 @@ LIMIT_DISK_IO
     the backup run. The backup process will only get disk time when no other
     program is requesting it.
 
+    Valid options:
+        * yes
+        * no
+
 CHECK_FOR_UPDATE
     Tartarus checks whether a new version of the script is available. It will
     then print as message about it and continue with the backup. To disable
     this behaviour, set this variable to "no".
+
+    Valid options:
+        * yes
+        * no
 
 == Basic configuration examples
 
@@ -267,6 +276,17 @@ ENCRYPT_PASSPHRASE_FILE="/etc/tartarus/backups.sec"
 Also make sure that the passphrase file is only readable by root; otherwise
 anyone with access to that file can decrypt your backups.
 
+Asymmetric encryption is also possible. Just specify a key id to encrypt the
+backup archive using that public key:
+
+ENCRYPT_ASYMMETRICALLY="yes"
+ENCRYPT_KEY_ID="ABC12345"
+
+The resulting backup profile can only be decrypted using the matching private
+key.
+
+Symmetric and asymmetric encryption can also be combined: Then one credential, either
+the private key or the passphrase, is sufficient to decrypt the backup archive.
 
 == Restoring a backup
 
@@ -332,14 +352,15 @@ TARTARUS_CUSTOM_STORAGE_METHOD() {
   ssh $USER@$HOST "cat > ~/$FILENAME"
 }
 
-Any exit code except 0 is considered an error and will abort the backup process. If the
-archive is to be split into multiple chunks, the storage method might be called more than
-once.
+Any exit code except 0 is considered an error and will abort the backup
+process. If the archive is to be split into multiple chunks, the storage method
+might be called more than once.
 
 == Tartarus processing hooks
 
 For special configuration purposes, the Tartarus scripts offers special hooks
-where user supplied code can be placed and executed during the backup procedure.
+where user supplied code can be placed and executed during the backup
+procedure.
 
 The following hooks are called during the run of the program:
 
@@ -381,8 +402,8 @@ TARTARUS_DEBUG_HOOK
 Each segment of the backup procedure - gathering , bundling, compression,
 encryption and storage - itself is also embraced by a pair of hooks. Those
 functions however are integrated into the pipeline that transports your backup
-data, so writing to STDOUT or reading from STDIN in a hook might destroy your data.
-Only do so if you know exactly what you are doing.
+data, so writing to STDOUT or reading from STDIN in a hook might destroy your
+data. Only do so if you know exactly what you are doing.
 
 TARTARUS_PRE_FIND_HOOK / TARTARUS_POST_FIND_HOOK
     Executed before/after the find process gathers the files to be saved
@@ -411,10 +432,10 @@ TARTARUS_DEBUG_HOOK() {
 Hooks can also increase the reliability of the snapshot functionality. LVM
 snapshots can lead to slightly inconsistent file systems, since they do not
 freeze the file system, but the underlying block device. This is why Tartarus
-calls 'sync' right before creating the snapshot volume. Most filesystems can cope
-with that issue. But if you want to make sure that the snapshot file system is valid,
-hooks can be used to run a file system check on the snapshot volume before mounting
-it.
+calls 'sync' right before creating the snapshot volume. Most filesystems can
+cope with that issue. But if you want to make sure that the snapshot file
+system is valid, hooks can be used to run a file system check on the snapshot
+volume before mounting it:
 
 TARTARUS_PRE_FREEZE_HOOK() {
     # make sure everything is synced to disk
@@ -430,5 +451,44 @@ TARTARUS_POST_FREEZE_HOOK() {
     # about to mount, try auto-repair
     /sbin/fsck -y "$SNAPDEV"
 }
+
+== Removing obsolete backups from an FTP server
+
+Tartarus is accompanied by the perl script "charon.pl", which roams an FTP
+server and removes any backups archives that match a certain pattern and exceed
+a specified age. Configuration is done via command line arguments, check the
+output of "charon.pl --help" for a detailed list.
+
+# charon.pl --host safehaven --user john --password SECRET --dir / --maxage --profile home --dry-run
+
+This command line will try to log into the server "safehaven" using the user
+name "john" and his password "SECRET" and remove backup file from the profile
+"home" with are more than 7 days old. Due to the command line switch
+"--dry-run", no files are actually deleted - the script will only explain its
+potential actions in its output.
+
+Charon will never remove a full backup until a incremental one depends on it;
+it will be deleted once all depending backups are expired.
+
+The script does not read tartarus backup profiles; by using hooks however it
+can be called from Tartarus after completing a successfull backup run. This
+way, Tartarus can pass the configuration variables to Charon:
+
+# Hook in Charon
+TARTARUS_POST_PROCESS_HOOK() {
+    # pass configuration variables to charon
+    # transmit the password through stdin to hide it from "ps ax"
+    local CHARON="/usr/local/sbin/charon.pl"
+    local MAX_AGE_IN_DAYS="7"
+    echo -n "$STORAGE_FTP_PASSWORD" | $CHARON \
+        --host "$STORAGE_FTP_SERVER" --user "$STORAGE_FTP_USER" \
+        --readpassword \
+        --dir "$STORAGE_FTP_DIR" \
+        --maxage "$MAX_AGE_IN_DAYS" \
+        --profile "$NAME"
+}
+
+TARTARUS_POST_PROCESS_HOOK will only be executed in case of a successfull
+backup, so there won't be any files removed if tartarus encounters an error.
 
 Last change: $Date$

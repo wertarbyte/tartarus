@@ -420,7 +420,7 @@ elif [ "$STORAGE_METHOD" = "FILE" ]; then
 elif [ "$STORAGE_METHOD" = "SIMULATE" ]; then
     storage() {
         local FILENAME=$( constructFilename )
-        debug "Proposed filename is $FILENAME"
+        debug "SIMULATION: Proposed filename is $FILENAME, storing backup to /dev/null!"
         cat - > /dev/null
     }
 elif [ "$STORAGE_METHOD" = "CUSTOM" ]; then
@@ -463,47 +463,42 @@ encryption() {
 }
 
 # We can only use one method of encryption at once
-if isEnabled "$ENCRYPT_SYMMETRICALLY" && isEnabled "$ENCRYPT_ASYMMETRICALLY"; then
-    cleanup 1 "ENCRYPT_SYMMETRICALLY and ENCRYPT_ASYMMETRICALLY are mutually exclusive."
-fi
+if isEnabled "$ENCRYPT_SYMMETRICALLY" || isEnabled "$ENCRYPT_ASYMMETRICALLY"; then
 
-GPGOPTIONS="--batch --no-use-agent --no-tty --trust-model always $ENCRYPT_GPG_OPTIONS"
-
-if isEnabled "$ENCRYPT_SYMMETRICALLY"; then
     requireCommand gpg || cleanup 1
 
-    # Can we access the passphrase file?
-    if ! [ -r "$ENCRYPT_PASSPHRASE_FILE" ]; then
-        cleanup 1 "ENCRYPT_PASSPHRASE_FILE '$ENCRYPT_PASSPHRASE_FILE' is not readable."
-    else
-        ARCHIVE_EXTENSION="$ARCHIVE_EXTENSION.gpg"
-        encryption() {
-            # symmetric encryption
-            gpg $GPGOPTIONS -c --passphrase-file "$ENCRYPT_PASSPHRASE_FILE"
-        }
-    fi
-fi
-
-if isEnabled "$ENCRYPT_ASYMMETRICALLY"; then
-    requireCommand gpg || cleanup 1
+    GPG_BASE_OPTIONS="--batch --no-use-agent --no-tty --trust-model always $ENCRYPT_GPG_OPTIONS"
+    ARCHIVE_EXTENSION="$ARCHIVE_EXTENSION.gpg"
     
-    if [ -n "$ENCRYPT_KEYRING" ]; then
-        if [ -f "$ENCRYPT_KEYRING" ]; then
-            GPGOPTIONS=$GPGOPTIONS' --keyring '$ENCRYPT_KEYRING
+    if isEnabled "$ENCRYPT_SYMMETRICALLY"; then
+        # Can we access the passphrase file?
+        if ! [ -r "$ENCRYPT_PASSPHRASE_FILE" ]; then
+            cleanup 1 "ENCRYPT_PASSPHRASE_FILE '$ENCRYPT_PASSPHRASE_FILE' is not readable."
         else
-            cleanup 1 "ENCRYPT_KEYRING '$ENCRYPT_KEYRING' specified but not found."
+            GPGOPTIONS="$GPGOPTIONS --symmetric --passphrase-file $ENCRYPT_PASSPHRASE_FILE"
         fi
     fi
-    # Can we find the key id?
-    if ! gpg $GPGOPTIONS --list-key "$ENCRYPT_KEY_ID" >/dev/null 2>&1; then
-        cleanup 1 "Unable to find ENCRYPT_KEY_ID '$ENCRYPT_KEY_ID'."
-    else
-        ARCHIVE_EXTENSION="$ARCHIVE_EXTENSION.gpg"
-        encryption() {
-            # asymmetric encryption
-            gpg $GPGOPTIONS --encrypt -r "$ENCRYPT_KEY_ID"
-        }
+
+    if isEnabled "$ENCRYPT_ASYMMETRICALLY"; then
+        if [ -n "$ENCRYPT_KEYRING" ]; then
+            if [ -f "$ENCRYPT_KEYRING" ]; then
+                GPGOPTIONS="$GPGOPTIONS --keyring $ENCRYPT_KEYRING"
+            else
+                cleanup 1 "ENCRYPT_KEYRING '$ENCRYPT_KEYRING' specified but not found."
+            fi
+        fi
+        # Can we find the key id?
+        if ! gpg $GPG_BASE_OPTIONS --list-key "$ENCRYPT_KEY_ID" >/dev/null 2>&1; then
+            cleanup 1 "Unable to find ENCRYPT_KEY_ID '$ENCRYPT_KEY_ID'."
+        else
+            GPGOPTIONS="$GPGOPTIONS --encrypt -r $ENCRYPT_KEY_ID"
+        fi
+
     fi
+
+    encryption() {
+        gpg $GPG_BASE_OPTIONS $GPGOPTIONS
+    }
 fi
 
 ###

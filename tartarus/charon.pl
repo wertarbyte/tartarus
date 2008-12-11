@@ -9,7 +9,7 @@
 # WARNING: This script will delete your backup data when called
 # improperly
 #
-# Version 0.6.3
+# Version 0.6.3.xp.2
 #
 # Last change: $Date$
 
@@ -46,7 +46,7 @@ charon.pl by Stefan Tomanek <stefan.tomanek\@wertarbyte.de>
     --readpassword  read password from stdin
     --dir           server directory of the backup files
     --maxage        maximum age of backup files (in days)
-    --profile       backup profile to process
+    --profile       backup profile name to process
     --all           process all files found in the directory
     --dry-run       do a test run, don't actually delete files
     --help          show this help text

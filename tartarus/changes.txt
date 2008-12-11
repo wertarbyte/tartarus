@@ -1,0 +1,13 @@
+== 0.6.4 == 2008-12-11 14:45:40 +0100
+* general code cleanups
+* removed the (undocumented) SSH storage option, which can now be
+  accomplished by the new (documented) CUSTOM storage method
+* fixed and documented the CUSTOM storage method
+* added charon script to the documentation
+* started to write a changelog :-)
+* set up a mailing list, please see the website about that
+
+-- 
+Tartarus backup system
+http://wertarbyte.de/tartarus.shtml
+Current version of this file: http://wertarbyte.de/tartarus/current/changes.txt

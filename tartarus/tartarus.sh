@@ -316,7 +316,7 @@ fi
 # Do we want to freeze the filesystem during the backup run?
 if isEnabled "$CREATE_LVM_SNAPSHOT"; then
     if [ -z "$LVM_VOLUME_NAME" ]; then
-        cleanup "LVM_VOLUME_NAME is mandatory when using LVM snapshots"
+        cleanup 1 "LVM_VOLUME_NAME is mandatory when using LVM snapshots"
     fi
 
     if [ -z "$LVM_MOUNT_DIR" ]; then
@@ -327,7 +327,7 @@ if isEnabled "$CREATE_LVM_SNAPSHOT"; then
 
     # Check whether $LVM_VOLUME_NAME is a valid logical volume
     if ! lvdisplay "$LVM_VOLUME_NAME" > /dev/null; then
-        cleanup 1"'$LVM_VOLUME_NAME' is not a valid LVM volume."
+        cleanup 1 "'$LVM_VOLUME_NAME' is not a valid LVM volume."
     fi
 
     # Check whether we have a direcory to mount the snapshot to

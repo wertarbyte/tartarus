@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# charon.pl by Stefan Tomanek <stefan.tomanek@wertarbyte.de>
+# charon by Stefan Tomanek <stefan.tomanek@wertarbyte.de>
 #              http://wertarbyte.de/tartarus.shtml
 #
 # This script will remove tartarus backup files from an FTP server
@@ -9,7 +9,7 @@
 # WARNING: This script will delete your backup data when called
 # improperly
 #
-# Version 0.6.4.1
+# Version 0.6.4.2
 #
 # Last change: $Date$
 

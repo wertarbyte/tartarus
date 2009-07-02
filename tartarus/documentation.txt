@@ -1,12 +1,12 @@
 Tartarus - A flexible yet simple backup software
 
-Version 0.6.4.1
+Version 0.6.4.2
 
 by Stefan Tomanek (stefan.tomanek@wertarbyte.de)
 http://wertarbyte.de/tartarus.shtml
 
 
-Tartarus.sh reads it options from a configuration file specified at the command
+Tartarus reads it options from a configuration file specified at the command
 line. This file is in fact a shell script and has the duty of setting several
 variables that control the behaviour of the backup script. Each configuration
 file is called a profile.
@@ -169,7 +169,7 @@ INCREMENTAL_BACKUP
     Don't create a full backup but only save files that have been modified
     after the file set by INCREMENTAL_TIMESTAMP_FILE has been touched. Instead
     of enabling this option in the configuration file, you can also call
-    tartarus.sh with the option "-i".
+    tartarus with the option "-i".
 
     Valid options:
         * yes
@@ -212,7 +212,7 @@ STORAGE_FTP_USER="johndoe"
 STORAGE_FTP_PASSWORD="verysecret"
 COMPRESSION_METHOD="bzip2"
 
-By calling »tartarus.sh /etc/tartarus/homedirs.conf« the script will gather all
+By calling »tartarus /etc/tartarus/homedirs.conf« the script will gather all
 files below /home, compress them using bzip2 and store it on the FTP server
 ftpbackup.hostingcompany.com.
 
@@ -261,7 +261,7 @@ INCREMENTAL_TIMESTAMP_FILE="/var/spool/tartarus/homedirs"
 
 Instead of copying the profile file and adding the lines, you can also just
 reuse the existing configuration profile and start Tartarus with the option
-"-i": 'tartarus.sh -i /etc/tartarus/homedirs.conf' will create an incremental
+"-i": 'tartarus -i /etc/tartarus/homedirs.conf' will create an incremental
 backups based on the latest flag file deposited by the last full run.
 
 == Encryption

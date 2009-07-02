@@ -4,7 +4,7 @@
 #            http://wertarbyte.de/tartarus.shtml
 #
 # Last change: $Date$
-readonly VERSION="0.6.4.1"
+readonly VERSION="0.6.4.2"
 
 CMD_INCREMENTAL="no"
 CMD_UPDATE="no"

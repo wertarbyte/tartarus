@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# orpheus.sh by Stefan Tomanek <stefan.tomanek@wertarbyte.de>
+# orpheus by Stefan Tomanek <stefan.tomanek@wertarbyte.de>
 #              http://wertarbyte.de/tartarus.shtml
 #
 # This script pulls single files from the backup archives

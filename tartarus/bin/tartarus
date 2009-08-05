@@ -580,7 +580,7 @@ if isEnabled "$STAY_IN_FILESYSTEM"; then
 fi
 
 if isEnabled "$INCREMENTAL_BACKUP"; then
-    FINDARGS="-newer $INCREMENTAL_TIMESTAMP_FILE $FINDARGS"
+    FINDARGS="-cnewer $INCREMENTAL_TIMESTAMP_FILE $FINDARGS"
 fi
 
 # Make sure that an error inside the pipeline propagates

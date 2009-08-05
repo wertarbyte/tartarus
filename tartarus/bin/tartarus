@@ -363,7 +363,7 @@ if [ -z "$ASSEMBLY_METHOD" ] || [ "$ASSEMBLY_METHOD" = "tar" ]; then
     requireCommand tar || cleanup 1
     collate() {
         local TAROPTS="--no-unquote --no-recursion"
-        call tar cp $TAROPTS --null -T -
+        call tar cpf -  $TAROPTS --null -T -
         local EXITCODE=$?
         # exit code 1 means that some files have changed while backing them
         # up, we think that is OK for now

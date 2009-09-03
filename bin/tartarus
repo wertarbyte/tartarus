@@ -6,11 +6,14 @@
 # Last change: $Date$
 readonly VERSION="0.6.4.2"
 
+# fail on undefined variables
+set -u
+
 CMD_INCREMENTAL="no"
 CMD_UPDATE="no"
 PROFILE=""
 # check command line
-while ! [ "$1" = "" ]; do
+while [ -n "${1:-}" ]; do
     if [ "$1" = "-i" ] || [ "$1" = "--inc" ]; then
         CMD_INCREMENTAL="yes"
     elif [ "$1" = "-u" ] || [ "$1" = "--update" ]; then
@@ -68,7 +71,7 @@ cleanup() {
         debug "Canceling backup procedure and cleaning up..."
     fi
 
-    if isEnabled "$CREATE_LVM_SNAPSHOT"; then
+    if isEnabled "${CREATE_LVM_SNAPSHOT:-}"; then
         umount $SNAPDEV 2> /dev/null
         lvremove -f $SNAPDEV 2> /dev/null
     fi
@@ -83,7 +86,7 @@ cleanup() {
 # of new hooks to avoid loops
 HOOKS_ENABLED=1
 hook() {
-    local HOOK_NAME="$1"
+    local HOOK_NAME="${1:-}"
 
     if [ "$HOOKS_ENABLED" -ne 1 ]; then
         return
@@ -102,7 +105,7 @@ hook() {
 
 # Execute a command and embrace it with hooks
 call() {
-    local METHOD="$1"
+    local METHOD="${1:-}"
     shift
     # Hook functions are upper case
     local MHOOK="$(echo "$METHOD" | tr '[:lower:]' '[:upper:]')"
@@ -343,7 +346,7 @@ constructFilename() {
         INC="-inc-${BASEDON}"
     fi
     local CHUNK=""
-    if [ -n "$CURRENT_CHUNK" ]; then
+    if [ -n "${CURRENT_CHUNK:-}" ]; then
         CHUNK=".chunk-$CURRENT_CHUNK"
     fi
     local FILENAME="tartarus-${NAME}-${DATE}${INC}.${ASSEMBLY_METHOD}${ARCHIVE_EXTENSION:-}${CHUNK}"

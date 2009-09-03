@@ -496,5 +496,3 @@ TARTARUS_POST_PROCESS_HOOK() {
 
 TARTARUS_POST_PROCESS_HOOK will only be executed in case of a successfull
 backup, so there won't be any files removed if tartarus encounters an error.
-
-Last change: $Date$

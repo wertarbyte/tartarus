@@ -10,8 +10,6 @@
 # improperly
 #
 # Version 0.6.4.2
-#
-# Last change: $Date$
 
 use strict;
 use warnings;

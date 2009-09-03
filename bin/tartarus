@@ -3,7 +3,6 @@
 # Tartarus by Stefan Tomanek <stefan.tomanek@wertarbyte.de>
 #            http://wertarbyte.de/tartarus.shtml
 #
-# Last change: $Date$
 readonly VERSION="0.6.4.2"
 
 # fail on undefined variables

@@ -32,8 +32,8 @@ STAY_IN_FILESYSTEM
 EXCLUDE
     A list of directories you wish to exclude from the backup. While Tartarus
     will not descend into the directories, they themselves will be included
-    in the backup (without their contents). Since the configuration file is
-    read like a shell script, globbing and expansion may occur.
+    in the backup (without their contents). While running the script, filename
+    globbing will occur.
 
 EXCLUDE_FILES
     A list of directories from which no files will be saved, while its 

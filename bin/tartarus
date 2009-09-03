@@ -572,7 +572,7 @@ done
 # Privent globbing since we are dealing with find patterns here
 set -f
 for p in $EXCLUDE_FILENAME_PATTERNS; do
-    EXCLUDES="$EXCLUDES -iname '$i' -type f -o"
+    EXCLUDES="$EXCLUDES -iname $i -type f -o"
 done
 
 

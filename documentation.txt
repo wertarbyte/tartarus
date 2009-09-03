@@ -122,7 +122,7 @@ STORAGE_CHUNK_SIZE
     The maximum file size (in MiB) the storage medium can handle. If this is set,
     the backup archive will be split in several files. It can be used to circumvent
     limitations in old FTP servers or file systems that cannot handle files larger
-    than 2 GiB.
+    than 2 GiB. To restore the data, the files have to be concatenated.
 
 COMPRESSION_METHOD
     The compression method you want to apply to your backup stream.

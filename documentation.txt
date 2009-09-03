@@ -40,6 +40,10 @@ EXCLUDE_FILES
     subdirectories will be stored in the backup. This is useful if you want
     to preserve the directory structure while discarding the file content.
 
+EXCLUDE_FILENAME_PATTERNS
+    A list of patterns that will cause matching filenames to be excluded from
+    the backup.
+
 CREATE_LVM_SNAPSHOT
     If this is set to yes, Tartarus will try to freeze the content of the LVM
     volume specified with LVM_VOLUME_NAME - The snapshot will then be mounted

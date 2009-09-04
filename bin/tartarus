@@ -488,13 +488,15 @@ if isEnabled "$ENCRYPT_SYMMETRICALLY" || isEnabled "$ENCRYPT_ASYMMETRICALLY"; th
 
     GPG_BASE_OPTIONS="--batch --no-use-agent --no-tty --trust-model always $ENCRYPT_GPG_OPTIONS"
     ARCHIVE_EXTENSION="$ARCHIVE_EXTENSION.gpg"
+
+    GPGOPTIONS=""
     
     if isEnabled "$ENCRYPT_SYMMETRICALLY"; then
         # Can we access the passphrase file?
         if ! [ -r "$ENCRYPT_PASSPHRASE_FILE" ]; then
             cleanup 1 "ENCRYPT_PASSPHRASE_FILE '$ENCRYPT_PASSPHRASE_FILE' is not readable."
         else
-            GPGOPTIONS="${GPGOPTIONS:-} --symmetric --passphrase-file $ENCRYPT_PASSPHRASE_FILE"
+            GPGOPTIONS="$GPGOPTIONS --symmetric --passphrase-file $ENCRYPT_PASSPHRASE_FILE"
         fi
     fi
 

@@ -1,3 +1,10 @@
+tartarus (0.6.5) unstable; urgency=low
+
+  * minor bugfixes
+  * added the possibility to exlcude files based on filename patterns
+
+ -- Stefan Tomanek <stefan.tomanek@wertarbyte.de>  Sat, 10 Oct 2009 10:01:53 +0200
+
 tartarus (0.6.4.2-1.1) unstable; urgency=low
 
   * changed dependency from lvm-common to lvm2

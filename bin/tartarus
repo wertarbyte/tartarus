@@ -240,6 +240,7 @@ LVM_VOLUME_NAME=""
 # * tar (default)
 # * afio
 ASSEMBLY_METHOD="tar"
+COMPRESSION_METHOD=""
 # Valid methods are:
 # * FTP
 # * FILE
@@ -459,6 +460,7 @@ compression() {
     cat -
 }
 
+ARCHIVE_EXTENSION=""
 # afio handles compression by itself
 if [ "$ASSEMBLY_METHOD" != "afio" ]; then
     if [ "$COMPRESSION_METHOD" = "bzip2" ]; then

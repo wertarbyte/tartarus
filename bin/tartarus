@@ -259,6 +259,18 @@ STORAGE_CHUNK_SIZE=""
 # Options for incremental backups
 INCREMENTAL_BACKUP="no"
 INCREMENTAL_TIMESTAMP_FILE=""
+INCREMENTAL_STACKING="no"
+
+# Do we want to create or update the timestamp file?
+update_timestamp() {
+    # no timestamp file defined
+    [ -z "$INCREMENTAL_TIMESTAMP_FILE" ] && return 1
+    # we are doing an incremental backup succeeding runs shall not be stacked upon
+    isEnabled "$INCREMENTAL_BACKUP" && ! isEnabled "$INCREMENTAL_STACKING" && return 1
+    
+    # now all remaining cases (full backup and stackable incremental/differential backup) are covered
+    return 0
+}
 
 # Encrypt the backup using a passphrase?
 ENCRYPT_SYMMETRICALLY="no"
@@ -536,7 +548,7 @@ DATE="$(date +%Y%m%d-%H%M)"
 debug "syncing..."
 sync
 
-if ! isEnabled "$INCREMENTAL_BACKUP" && [ -n "$INCREMENTAL_TIMESTAMP_FILE" ]; then
+if update_timestamp; then
     # Create temporary timestamp file if a location is defined and
     # we are doing a full backup
     echo $DATE > "${INCREMENTAL_TIMESTAMP_FILE}.running"
@@ -633,7 +645,7 @@ if isEnabled "$FILE_LIST_CREATION"; then
 fi
 
 # If we did a full backup, we might want to update the timestamp file
-if ! [ -z "$INCREMENTAL_TIMESTAMP_FILE" ] && ! isEnabled "$INCREMENTAL_BACKUP"; then
+if update_timestamp; then
     if [ -e "$INCREMENTAL_TIMESTAMP_FILE" ]; then
         OLDDATE=$(cat $INCREMENTAL_TIMESTAMP_FILE)
         cp -a "$INCREMENTAL_TIMESTAMP_FILE" "$INCREMENTAL_TIMESTAMP_FILE.$OLDDATE"

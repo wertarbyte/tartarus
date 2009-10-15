@@ -166,7 +166,7 @@ ENCRYPT_KEYRING
     The keyring file you wish to read. If unspecified, gnupg uses the user keyring.
 
 INCREMENTAL_TIMESTAMP_FILE
-    A timestamp file that is updated on each succesfull full backup run and
+    A timestamp file that is updated on each succesfull backup run and
     used as a reference point for future incremental backups
 
 INCREMENTAL_BACKUP
@@ -176,6 +176,18 @@ INCREMENTAL_BACKUP
     tartarus with the option "-i".
 
     Valid options:
+        * yes
+        * no
+
+INCREMENTAL_STACKING
+    Controls whether a successfull incremental backup updates the timestamp file.
+    Setting this option to "yes" creates _real_ incrementeal backups instead of
+    the differential ones used by default. This way, each incremental backup
+    is based on the one created before that, while settings this option to "no"
+    (which is the default value) bases each incremental backup onto the last full
+    backup run.
+
+    Valud options:
         * yes
         * no
 

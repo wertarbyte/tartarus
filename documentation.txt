@@ -135,6 +135,7 @@ COMPRESSION_METHOD
         * none
         * gzip
         * bzip2
+        * pbzip2
 
 ENCRYPT_SYMMETRICALLY
     If enabled, the backup data will be encrypted using a password read from

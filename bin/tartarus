@@ -124,7 +124,6 @@ call() {
 update_check() {
     requireCommand curl awk || return
     local VERSION_URL="http://wertarbyte.de/tartarus/upgrade-$VERSION"
-    local CHANGELOG_URL="http://wertarbyte.de/tartarus/current/changes.txt-$VERSION"
 
     local NEW_VERSION="$(curl -fs "$VERSION_URL")"
     if [ "$?" -ne 0 ]; then
@@ -146,19 +145,8 @@ BEGIN {
 }
 '
     if [ "$?" -eq 1 ]; then
-        debug "!!! This script is probably outdated !!!"
-        debug "An upgrade to version $NEW_VERSION is available. Please visit http://wertarbyte.de/tartarus.shtml"
-        debug ""
-        debug "Changes from this version on:"
-        # display changelog
-        curl -sL "$CHANGELOG_URL" | awk -vCURRENT="$VERSION" '
-            $0 ~ "(^== "CURRENT" ==( |$))|(^-- $)" {
-                FINISHED=1
-            }
-            !FINISHED {
-                print $0;
-            }
-        ' | while IFS='' read LINE; do debug "$LINE"; done
+        debug "!!! This script is outdated !!!"
+        debug "An upgrade to version $NEW_VERSION is available. Please visit http://wertarbyte.de/tartarus.shtml or use your package system to install the new version."
         return 1
     fi
     return 0

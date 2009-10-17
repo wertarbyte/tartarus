@@ -1,3 +1,12 @@
+tartarus (0.7.0-1) unstable; urgency=low
+
+  * Add real incremental (stacked) backups
+  * add pbzip as compression method
+  * moved documentation.txt to /usr/share/doc/tartarus/configuration.txt
+  * minor bugfixes
+
+ -- Stefan Tomanek <stefan.tomanek@wertarbyte.de>  Sat, 17 Oct 2009 14:10:08 +0200
+
 tartarus (0.6.5-1) unstable; urgency=low
 
   * switched to new debian build system

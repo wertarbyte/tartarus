@@ -3,7 +3,7 @@
 # Tartarus by Stefan Tomanek <stefan.tomanek@wertarbyte.de>
 #            http://wertarbyte.de/tartarus.shtml
 #
-readonly VERSION="0.6.5"
+readonly VERSION="0.7.0"
 
 # fail on undefined variables
 set -u
@@ -124,7 +124,6 @@ call() {
 update_check() {
     requireCommand curl awk || return
     local VERSION_URL="http://wertarbyte.de/tartarus/upgrade-$VERSION"
-    local CHANGELOG_URL="http://wertarbyte.de/tartarus/current/changes.txt-$VERSION"
 
     local NEW_VERSION="$(curl -fs "$VERSION_URL")"
     if [ "$?" -ne 0 ]; then
@@ -146,19 +145,8 @@ BEGIN {
 }
 '
     if [ "$?" -eq 1 ]; then
-        debug "!!! This script is probably outdated !!!"
-        debug "An upgrade to version $NEW_VERSION is available. Please visit http://wertarbyte.de/tartarus.shtml"
-        debug ""
-        debug "Changes from this version on:"
-        # display changelog
-        curl -sL "$CHANGELOG_URL" | awk -vCURRENT="$VERSION" '
-            $0 ~ "(^== "CURRENT" ==( |$))|(^-- $)" {
-                FINISHED=1
-            }
-            !FINISHED {
-                print $0;
-            }
-        ' | while IFS='' read LINE; do debug "$LINE"; done
+        debug "!!! This script is outdated !!!"
+        debug "An upgrade to version $NEW_VERSION is available. Please visit http://wertarbyte.de/tartarus.shtml or use your package system to install the new version."
         return 1
     fi
     return 0
@@ -405,6 +393,9 @@ elif [ "$ASSEMBLY_METHOD" = "afio" ]; then
     elif [ "$COMPRESSION_METHOD" = "bzip2" ]; then
         AFIO_OPTIONS="$AFIO_OPTIONS -Z -P bzip2"
         ARCHIVE_EXTENSION=".bz2"
+    elif [ "$COMPRESSION_METHOD" = "pzip2" ]; then
+        AFIO_OPTIONS="$AFIO_OPTIONS -Z -P pzip2"
+        ARCHIVE_EXTENSION=".bz2"
     fi
     collate() {
         call afio -o $AFIO_OPTIONS -0 -
@@ -487,6 +478,12 @@ if [ "$ASSEMBLY_METHOD" != "afio" ]; then
             gzip
         }
         ARCHIVE_EXTENSION=".gz"
+    elif [ "$COMPRESSION_METHOD" = "pbzip" ]; then
+        requireCommand pbzip2 || cleanup 1
+        compression() {
+            pbzip2
+        }
+        ARCHIVE_EXTENSION=".bz2"
     fi
 fi
 

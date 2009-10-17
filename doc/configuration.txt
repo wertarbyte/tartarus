@@ -1,6 +1,6 @@
 Tartarus - A flexible yet simple backup software
 
-Version 0.6.5
+Version 0.7.0
 
 by Stefan Tomanek (stefan.tomanek@wertarbyte.de)
 http://wertarbyte.de/tartarus.shtml
@@ -135,6 +135,7 @@ COMPRESSION_METHOD
         * none
         * gzip
         * bzip2
+        * pbzip2
 
 ENCRYPT_SYMMETRICALLY
     If enabled, the backup data will be encrypted using a password read from

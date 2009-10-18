@@ -124,6 +124,7 @@ call() {
 update_check() {
     requireCommand curl awk || return
     local VERSION_URL="http://wertarbyte.de/tartarus/upgrade-$VERSION"
+    VERSION_URL="${VERSION_URL}-deb"
 
     local NEW_VERSION="$(curl -fs "$VERSION_URL")"
     if [ "$?" -ne 0 ]; then

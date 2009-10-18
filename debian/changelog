@@ -1,3 +1,10 @@
+tartarus (0.7.1-2) unstable; urgency=low
+
+  * added debian suffix to upgrade check URL
+  * added version dependency for pbzip2 packages (1.0.3 is needed)
+
+ -- Stefan Tomanek <stefan.tomanek@wertarbyte.de>  Mon, 19 Oct 2009 00:58:33 +0200
+
 tartarus (0.7.1-1) unstable; urgency=low
 
   * fixed parsing of pbzip2 compression

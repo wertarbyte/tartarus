@@ -3,7 +3,7 @@
 # Tartarus by Stefan Tomanek <stefan.tomanek@wertarbyte.de>
 #            http://wertarbyte.de/tartarus.shtml
 #
-readonly VERSION="0.7.0"
+readonly VERSION="0.7.1"
 
 # fail on undefined variables
 set -u

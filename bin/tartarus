@@ -3,7 +3,7 @@
 # Tartarus by Stefan Tomanek <stefan.tomanek@wertarbyte.de>
 #            http://wertarbyte.de/tartarus.shtml
 #
-readonly VERSION="0.7.0"
+readonly VERSION="0.7.1"
 
 # fail on undefined variables
 set -u
@@ -393,8 +393,8 @@ elif [ "$ASSEMBLY_METHOD" = "afio" ]; then
     elif [ "$COMPRESSION_METHOD" = "bzip2" ]; then
         AFIO_OPTIONS="$AFIO_OPTIONS -Z -P bzip2"
         ARCHIVE_EXTENSION=".bz2"
-    elif [ "$COMPRESSION_METHOD" = "pzip2" ]; then
-        AFIO_OPTIONS="$AFIO_OPTIONS -Z -P pzip2"
+    elif [ "$COMPRESSION_METHOD" = "pbzip2" ]; then
+        AFIO_OPTIONS="$AFIO_OPTIONS -Z -P pbzip2"
         ARCHIVE_EXTENSION=".bz2"
     fi
     collate() {
@@ -478,7 +478,7 @@ if [ "$ASSEMBLY_METHOD" != "afio" ]; then
             gzip
         }
         ARCHIVE_EXTENSION=".gz"
-    elif [ "$COMPRESSION_METHOD" = "pbzip" ]; then
+    elif [ "$COMPRESSION_METHOD" = "pbzip2" ]; then
         requireCommand pbzip2 || cleanup 1
         compression() {
             pbzip2

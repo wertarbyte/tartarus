@@ -10,7 +10,7 @@ Package: tartarus
 Architecture: all
 Depends: ${misc:Depends}, tar (>= 1.16) | afio
 Recommends: perl, curl
-Suggests: gnupg, bzip2 | gzip, lvm2, util-linux
+Suggests: gnupg, bzip2 | gzip | pbzip2 (>= 1.0.3-1), lvm2, util-linux
 Description: script based backup system
  Tartarus is a script based backup system that relies on default
  utilities available on most regular linux systems. It supports

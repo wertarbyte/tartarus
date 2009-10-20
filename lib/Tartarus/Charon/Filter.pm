@@ -16,8 +16,17 @@ sub new {
     my $class = ref $proto || $proto;
     my $self = {};
     $self->{files} = {};
+    $self->{verbose} = 0;
 
     bless $self, $class;
+}
+
+sub verbose {
+    my ($self, $flag) = @_;
+    if (defined $flag) {
+        $self->{verbose} = $flag;
+    }
+    return $self->{verbose};
 }
 
 sub files {
@@ -58,12 +67,12 @@ sub expire {
         my $age = int( ( time - __string2time($date) ) / (60*60*24) );
 
         if ($age > $days) {
-            say STDERR "$filename is $age days old, scheduling for deletion";
+            say STDERR "$filename is $age days old, scheduling for deletion" if $self->verbose;
             push @{$delete{$profile}{$date}}, $filename;
         } elsif ($inc && exists $delete{$profile}{$based_on}) {
             # If it is an incremental backup, we have to preserve the full backup it is based on
             for my $i (@{ $delete{$profile}{$based_on} }) {
-                say STDERR "Preserving ".$i." for $filename";
+                say STDERR "Preserving ".$i." for $filename" if $self->verbose;
             }
             delete $delete{$profile}{$based_on};
         }

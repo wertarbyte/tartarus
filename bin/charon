@@ -44,6 +44,7 @@ charon.pl by Stefan Tomanek <stefan.tomanek\@wertarbyte.de>
     --profile       backup profile name to process
     --all           process all files found in the directory
     --dry-run       do a test run, don't actually delete files
+    --verbose       be more verbose about the actions made
     --help          show this help text
 EOF
     if (defined $error) {
@@ -84,6 +85,7 @@ $ftp->cwd($dir) || die "Error changing to backup directory, ", $ftp->message();
 my @listing = $ftp->ls();
 
 my $c = new Tartarus::Charon::Filter();
+$c->verbose($verbose);
 $c->files( @listing );
 
 # if $uprofile is undefined, the filter works on all profiles

@@ -1,3 +1,10 @@
+tartarus (0.8.0-1) unstable; urgency=low
+
+  * move file selection to Tartarus::Charon::Filter perl module
+  * now creating spool directory /var/spool/tartarus during installation
+
+ -- Stefan Tomanek <stefan.tomanek@wertarbyte.de>  Tue, 20 Oct 2009 21:54:46 +0200
+
 tartarus (0.7.1-2) unstable; urgency=low
 
   * added debian suffix to upgrade check URL

@@ -56,6 +56,20 @@ sub __string2time {
 sub expire {
     my ($self, $days, $only_profile) = @_;
     my %delete = ();
+    
+    my $preserve;
+    $preserve = sub {
+        my ($profile, $date) = @_;
+        return unless $delete{$profile}{$date}{expired};
+        $delete{$profile}{$date}{expired} = 1;
+        
+        if ($delete{$profile}{$date}{base}) {
+            say STDERR "Preserving $profile-".$delete{$profile}{$date}{base}." for $profile-$date" if $self->verbose;
+            &{$preserve}( $profile, $delete{$profile}{$date}{base} );
+        }
+        delete $delete{$profile}{$date};
+    };
+
     for my $filename ($self->files) {
         next unless ($filename =~ $filename_re);
         my $profile = $+{profile};
@@ -64,17 +78,19 @@ sub expire {
         my $date = $+{date};
         my $based_on = $+{basedate};
         my $inc = defined $based_on;
+        
+        # construct tree node
+        $delete{$profile}{$date}{base} = $based_on;
+        push @{$delete{$profile}{$date}{files}}, $filename;
+        $delete{$profile}{$date}{expired} = 1;
+
         my $age = int( ( time - __string2time($date) ) / (60*60*24) );
 
         if ($age > $days) {
             say STDERR "$filename is $age days old, scheduling for deletion" if $self->verbose;
-            push @{$delete{$profile}{$date}}, $filename;
-        } elsif ($inc && exists $delete{$profile}{$based_on}) {
-            # If it is an incremental backup, we have to preserve the full backup it is based on
-            for my $i (@{ $delete{$profile}{$based_on} }) {
-                say STDERR "Preserving ".$i." for $filename" if $self->verbose;
-            }
-            delete $delete{$profile}{$based_on};
+        } else {
+            # If it is an incremental backup, we have to preserve the backup it is based on
+            &$preserve( $profile, $date );
         }
     }
     
@@ -82,7 +98,7 @@ sub expire {
     my @expire = ();
     for my $p (values %delete) {
         for my $a (values %$p) {
-            push @expire, @$a;
+            push @expire, @{$a->{files}} if $a->{expired};
         }
     }
     return @expire;

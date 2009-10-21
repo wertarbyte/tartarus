@@ -281,6 +281,35 @@ reuse the existing configuration profile and start Tartarus with the option
 "-i": 'tartarus -i /etc/tartarus/homedirs.conf' will create an incremental
 backups based on the latest flag file deposited by the last full run.
 
+As already said, incremental backups are (normally) based on the last full backup;
+usually, this is called a "differential" backup:
+
+  [F1]->[D1]        [F2]->[D4]
+    \------>[D2]      \------->[D5]
+     `--------->[D3]   `---------->[D6]
+
+While this backup strategy simplifies recovery (since only the most recent full
+and the most recent differential archive has to be extracted, e.g. F2 and D6),
+it can waste backup space in some cases. If a large file is added to the system
+after the full backup has been created, this file will appear in every partial
+backup afterwards.
+
+Another strategy is a "real" incremental backup, which is called a "stacked
+incremental backup" in Tartarus terminology. Instead of basing the partial
+backup on the last full run, it is based on the last successfull run - be it
+complete or partial as well.
+
+[F1]->[I1]->[I2]->[I3]
+                       [F2]->[I4]->[I5]->[I6]
+
+This behaviour will save space, since new (and unchanged) files will only
+appear in one archive. However, restoring a filesystem will require all
+archives to be extracted (F2 _and_ I4 _and_ I5 _and_ _I5_)
+
+Setting INCREMENTAL_STACKING to "yes" will enable this behaviour and makes
+Tartarus update the timestamp file after every backup run, not only after full
+backups.
+
 == Encryption
 
 Tartarus supports symmetric encryption through gpg (GNU Privacy Guard). To

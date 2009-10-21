@@ -1,0 +1,67 @@
+#!/usr/bin/perl
+#
+# charon.pipe by Stefan Tomanek <stefan.tomanek@wertarbyte.de>
+#              http://wertarbyte.de/tartarus.shtml
+#
+# This script filters filters tartarus backup filenames passed
+# through stdin and print expired ones on stdout.
+
+use strict;
+use warnings;
+use Getopt::Long;
+use Tartarus::Charon::Filter;
+
+my $zero_termination = 0;
+my $days_to_expire = 14;
+my $uprofile = undef;
+my $all = 0;
+
+my $dry_run = 0;
+my $verbose = 0;
+my $help = 0;
+
+sub usage {
+    my ($error) = @_;
+    print <<EOF;
+charon.pipe by Stefan Tomanek <stefan.tomanek\@wertarbyte.de>
+    
+    --null|-0       filenames are temrinated by the null character
+    --maxage        maximum age of backup files (in days)
+    --profile       backup profile name to process
+    --all           process all files found in the directory
+    --verbose       be more verbose about the actions made
+    --help          show this help text
+EOF
+    if (defined $error) {
+        print "\n$error\n";
+    }
+    exit 1;
+}
+
+GetOptions(
+    "null|0!"           => \$zero_termination,
+    "maxage|m=i"        => \$days_to_expire,
+    "profile|p=s"       => \$uprofile,
+    "all|a"             => \$all,
+    "verbose|v"         => \$verbose,
+    "help|h"            => \$help
+) || usage();
+
+usage "Neither --all nor a single backup profile specified" unless ($all || defined $uprofile);
+
+$/ = $zero_termination ? "\0" : "\n";
+
+my @listing = ();
+while (<STDIN>) {
+    chop;
+    push @listing, $_;
+}
+
+my $c = new Tartarus::Charon::Filter();
+$c->verbose($verbose);
+$c->files( @listing );
+
+# if $uprofile is undefined, the filter works on all profiles
+for ($c->expire($days_to_expire, $uprofile)) {
+    print $_, $/;
+}

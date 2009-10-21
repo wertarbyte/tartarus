@@ -12,7 +12,7 @@ use Getopt::Long;
 use Tartarus::Charon::Filter;
 
 my $zero_termination = 0;
-my $days_to_expire = 14;
+my $days_to_expire = undef;
 my $uprofile = undef;
 my $all = 0;
 
@@ -47,6 +47,7 @@ GetOptions(
     "help|h"            => \$help
 ) || usage();
 
+usage "No expiration age given" unless defined $days_to_expire;
 usage "Neither --all nor a single backup profile specified" unless ($all || defined $uprofile);
 
 $/ = $zero_termination ? "\0" : "\n";

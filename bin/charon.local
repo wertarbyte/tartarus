@@ -15,7 +15,7 @@ use Tartarus::Charon::Filter;
 
 my $dir = undef;
 
-my $days_to_expire = 14;
+my $days_to_expire = undef;
 my $uprofile = undef;
 my $all = 0;
 
@@ -52,6 +52,7 @@ GetOptions(
     "help|h"            => \$help
 ) || usage();
 
+usage "No expiration age given" unless defined $days_to_expire;
 usage "No directory specified" unless defined $dir;
 usage "Neither --all nor a single backup profile specified" unless ($all || defined $uprofile);
 

@@ -13,17 +13,28 @@ set -f
 CMD_INCREMENTAL="no"
 CMD_UPDATE="no"
 PROFILE=""
+
 # check command line
-while [ -n "${1:-}" ]; do
-    if [ "$1" = "-i" ] || [ "$1" = "--inc" ]; then
-        CMD_INCREMENTAL="yes"
-    elif [ "$1" = "-u" ] || [ "$1" = "--update" ]; then
-        CMD_UPDATE="yes"
-    else
-        PROFILE=$1
-    fi
-    shift
+GETOPT_TEMP=$(getopt -o ui --long update,inc -n tartarus -- "$@")
+if [ $? != 0 ] ; then echo "Terminating..." >&2 ; exit 1 ; fi
+
+eval set -- "$GETOPT_TEMP"
+while true ; do
+    case "$1" in
+        --inc|-i)
+            CMD_INCREMENTAL="yes";
+            shift
+        ;;
+        --update|-u)
+            CMD_UPDATE="yes";
+            shift
+        ;;
+        --) shift ; break ;;
+        *) echo "Internal error!" ; exit 1 ;;
+    esac
 done
+
+PROFILE=$1
 
 debug() {
     local DEBUGMSG="$*"

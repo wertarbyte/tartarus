@@ -2,7 +2,6 @@ use strict;
 package Tartarus::Charon::Filter;
 
 use Time::Local;
-use feature qw/say/;
 
 our $filename_re = qr/^tartarus-
     (?<profile>[^-]+)-
@@ -36,7 +35,7 @@ sub files {
         if ($filename =~ $filename_re) {
             $self->{files}{$filename} = 1;
         } else {
-            say STDERR "Unable to handle '$filename'";
+            print STDERR "Unable to handle '$filename'\n";
         }
     }
 
@@ -64,7 +63,7 @@ sub expire {
         $delete{$profile}{$date}{expired} = 1;
         
         if ($delete{$profile}{$date}{base}) {
-            say STDERR "Preserving $profile-".$delete{$profile}{$date}{base}." for $profile-$date" if $self->verbose;
+            print STDERR "Preserving $profile-".$delete{$profile}{$date}{base}." for $profile-$date\n" if $self->verbose;
             &{$preserve}( $profile, $delete{$profile}{$date}{base} );
         }
         delete $delete{$profile}{$date};
@@ -87,7 +86,7 @@ sub expire {
         my $age = int( ( time - __string2time($date) ) / (60*60*24) );
 
         if ($age > $days) {
-            say STDERR "$filename is $age days old, scheduling for deletion" if $self->verbose;
+            print STDERR "$filename is $age days old, scheduling for deletion\n" if $self->verbose;
         } else {
             # If it is an incremental backup, we have to preserve the backup it is based on
             &$preserve( $profile, $date );

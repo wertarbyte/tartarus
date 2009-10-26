@@ -380,6 +380,14 @@ line for listing such a backup might look like this:
 To restore incremental backups, just restore the last full backup as well as the
 most recent incremental one.
 
+== Removing obsolete backup archives
+
+Tartarus is accompanied by the perl script suite called "charon". These scripts
+identify backup archives that exceed a certain age while taking care of files
+other incremental backups depend on.
+
+For further instructions, consult the included file "charon.txt".
+
 == Defining a custom storage method
 
 Tartarus supports the creation of custom storage methods. No changes to the program
@@ -500,41 +508,3 @@ TARTARUS_POST_FREEZE_HOOK() {
     /sbin/fsck -y "$SNAPDEV"
 }
 
-== Removing obsolete backups from an FTP server
-
-Tartarus is accompanied by the perl script "charon.pl", which roams an FTP
-server and removes any backups archives that match a certain pattern and exceed
-a specified age. Configuration is done via command line arguments, check the
-output of "charon.pl --help" for a detailed list.
-
-# charon.pl --host safehaven --user john --password SECRET --dir / --maxage --profile home --dry-run
-
-This command line will try to log into the server "safehaven" using the user
-name "john" and his password "SECRET" and remove backup file from the profile
-"home" with are more than 7 days old. Due to the command line switch
-"--dry-run", no files are actually deleted - the script will only explain its
-potential actions in its output.
-
-Charon will never remove a full backup until a incremental one depends on it;
-it will be deleted once all depending backups are expired.
-
-The script does not read tartarus backup profiles; by using hooks however it
-can be called from Tartarus after completing a successfull backup run. This
-way, Tartarus can pass the configuration variables to Charon:
-
-# Hook in Charon
-TARTARUS_POST_PROCESS_HOOK() {
-    # pass configuration variables to charon
-    # transmit the password through stdin to hide it from "ps ax"
-    local CHARON="/usr/local/sbin/charon.pl"
-    local MAX_AGE_IN_DAYS="7"
-    echo -n "$STORAGE_FTP_PASSWORD" | $CHARON \
-        --host "$STORAGE_FTP_SERVER" --user "$STORAGE_FTP_USER" \
-        --readpassword \
-        --dir "$STORAGE_FTP_DIR" \
-        --maxage "$MAX_AGE_IN_DAYS" \
-        --profile "$NAME"
-}
-
-TARTARUS_POST_PROCESS_HOOK will only be executed in case of a successfull
-backup, so there won't be any files removed if tartarus encounters an error.

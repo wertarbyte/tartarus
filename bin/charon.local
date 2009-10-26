@@ -1,0 +1,75 @@
+#!/usr/bin/perl
+#
+# charon.local by Stefan Tomanek <stefan.tomanek@wertarbyte.de>
+#              http://wertarbyte.de/tartarus.shtml
+#
+# This script will remove tartarus backup files from a local directory
+#
+# WARNING: This script will delete your backup data when called
+# improperly
+
+use strict;
+use warnings;
+use Getopt::Long;
+use Tartarus::Charon::Filter;
+
+my $dir = undef;
+
+my $days_to_expire = undef;
+my $uprofile = undef;
+my $all = 0;
+
+my $dry_run = 0;
+my $verbose = 0;
+my $help = 0;
+
+sub usage {
+    my ($error) = @_;
+    print <<EOF;
+charon.local by Stefan Tomanek <stefan.tomanek\@wertarbyte.de>
+
+    --dir           server directory of the backup files
+    --maxage        maximum age of backup files (in days)
+    --profile       backup profile name to process
+    --all           process all files found in the directory
+    --dry-run       do a test run, don't actually delete files
+    --verbose       be more verbose about the actions made
+    --help          show this help text
+EOF
+    if (defined $error) {
+        print "\n$error\n";
+    }
+    exit 1;
+}
+
+GetOptions(
+    "maxage|m=i"        => \$days_to_expire,
+    "profile|p=s"       => \$uprofile,
+    "all|a"             => \$all,
+    "directory|dir|d=s" => \$dir,
+    "test|dry-run|n"    => \$dry_run,
+    "verbose|v"         => \$verbose,
+    "help|h"            => \$help
+) || usage();
+
+usage "No expiration age given" unless defined $days_to_expire;
+usage "No directory specified" unless defined $dir;
+usage "Neither --all nor a single backup profile specified" unless ($all || defined $uprofile);
+
+#chdir($dir) || die "Error changing to backup directory '$dir'";
+
+my $c = new Tartarus::Charon::Filter();
+$c->verbose($verbose);
+
+opendir(DIR, $dir) || die;
+my @files = grep { -f "$dir/$_" } readdir(DIR);
+closedir(DIR);
+$c->files( @files );
+
+# if $uprofile is undefined, the filter works on all profiles
+for my $file ($c->expire($days_to_expire, $uprofile)) {
+    print STDERR "Removing file $dir/$file...\n";
+    unless ($dry_run) {
+        unlink("$dir/$file") || print STDERR "Error removing $dir/$file!\n";
+    }
+}

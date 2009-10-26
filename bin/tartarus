@@ -9,6 +9,7 @@ readonly VERSION="0.8.0"
 set -u
 # disable filename globbing
 set -f
+shopt -s nocasematch
 
 CMD_INCREMENTAL="no"
 CMD_UPDATE="no"
@@ -45,10 +46,10 @@ debug() {
 isEnabled() {
     local V="$1"
     case "$V" in
-        yes|YES|1|on|ON|true|enabled)
+        yes|1|on|true|enabled)
             return 0
         ;;
-        no|NO|0|off|OFF|false|disabled|"")
+        no|0|off|false|disabled|"")
             return 1
         ;;
         *)

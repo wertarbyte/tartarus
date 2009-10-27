@@ -3,27 +3,39 @@
 # Tartarus by Stefan Tomanek <stefan.tomanek@wertarbyte.de>
 #            http://wertarbyte.de/tartarus.shtml
 #
-readonly VERSION="0.8.0"
+readonly VERSION="0.9.0"
 
 # fail on undefined variables
 set -u
 # disable filename globbing
 set -f
+shopt -s nocasematch
 
 CMD_INCREMENTAL="no"
 CMD_UPDATE="no"
 PROFILE=""
+
 # check command line
-while [ -n "${1:-}" ]; do
-    if [ "$1" = "-i" ] || [ "$1" = "--inc" ]; then
-        CMD_INCREMENTAL="yes"
-    elif [ "$1" = "-u" ] || [ "$1" = "--update" ]; then
-        CMD_UPDATE="yes"
-    else
-        PROFILE=$1
-    fi
-    shift
+GETOPT_TEMP=$(getopt -o ui --long update,inc -n tartarus -- "$@")
+if [ $? != 0 ] ; then echo "Terminating..." >&2 ; exit 1 ; fi
+
+eval set -- "$GETOPT_TEMP"
+while true ; do
+    case "$1" in
+        --inc|-i)
+            CMD_INCREMENTAL="yes";
+            shift
+        ;;
+        --update|-u)
+            CMD_UPDATE="yes";
+            shift
+        ;;
+        --) shift ; break ;;
+        *) echo "Internal error!" ; exit 1 ;;
+    esac
 done
+
+PROFILE=${1:-""}
 
 debug() {
     local DEBUGMSG="$*"
@@ -34,10 +46,10 @@ debug() {
 isEnabled() {
     local V="$1"
     case "$V" in
-        yes|YES|1|on|ON|true|enabled)
+        yes|1|on|true|enabled)
             return 0
         ;;
-        no|NO|0|off|OFF|false|disabled|"")
+        no|0|off|false|disabled|"")
             return 1
         ;;
         *)
@@ -368,96 +380,96 @@ constructListFilename() {
 }
 
 # Check backup collation methods
-if [ -z "$ASSEMBLY_METHOD" ] || [ "$ASSEMBLY_METHOD" = "tar" ]; then
-    # use the traditional tar setup
-    requireCommand tar || cleanup 1
-    collate() {
-        local TAROPTS="--no-unquote --no-recursion"
-        call tar cpf -  $TAROPTS --null -T -
-        local EXITCODE=$?
-        # exit code 1 means that some files have changed while backing them
-        # up, we think that is OK for now
-        if [ $EXITCODE -eq 1 ]; then
-            debug "Some files changed during the backup process, proceeding anyway"
-            return 0
-        fi
-        return $EXITCODE
-    }
-elif [ "$ASSEMBLY_METHOD" = "afio" ]; then
-    # afio is the new hotness
-    requireCommand afio || cleanup 1
-    # compress all files and ignore errors regarding archive compatibility
-    AFIO_OPTIONS="-2 0 -1 mC"
-    if [ "$COMPRESSION_METHOD" = "gzip" ]; then
-        AFIO_OPTIONS="$AFIO_OPTIONS -Z -P gzip"
-        ARCHIVE_EXTENSION=".gz"
-    elif [ "$COMPRESSION_METHOD" = "bzip2" ]; then
-        AFIO_OPTIONS="$AFIO_OPTIONS -Z -P bzip2"
-        ARCHIVE_EXTENSION=".bz2"
-    elif [ "$COMPRESSION_METHOD" = "pbzip2" ]; then
-        AFIO_OPTIONS="$AFIO_OPTIONS -Z -P pbzip2"
-        ARCHIVE_EXTENSION=".bz2"
-    fi
-    collate() {
-        call afio -o $AFIO_OPTIONS -0 -
-    }
-else
-    cleanup 1 "Unknown ASSEMBLY_METHOD '$ASSEMBLY_METHOD' specified"
-fi
+case "$ASSEMBLY_METHOD" in
+    tar|"")
+        # use the traditional tar setup
+        requireCommand tar || cleanup 1
+        collate() {
+            local TAROPTS="--no-unquote --no-recursion"
+            call tar cpf -  $TAROPTS --null -T -
+            local EXITCODE=$?
+            # exit code 1 means that some files have changed while backing them
+            # up, we think that is OK for now
+            if [ $EXITCODE -eq 1 ]; then
+                debug "Some files changed during the backup process, proceeding anyway"
+                return 0
+            fi
+            return $EXITCODE
+        }
+    ;;
+    afio)
+        # afio is the new hotness
+        requireCommand afio || cleanup 1
+        # compress all files and ignore errors regarding archive compatibility
+        AFIO_OPTIONS="-2 0 -1 mC"
+        collate() {
+            call afio -o $AFIO_OPTIONS -0 -
+        }
+    ;;
+    *)
+        cleanup 1 "Unknown ASSEMBLY_METHOD '$ASSEMBLY_METHOD' specified"
+    ;;
+esac
 
 # Check backup storage options
-if [ "$STORAGE_METHOD" = "FTP" ]; then
-    if [ -z "$STORAGE_FTP_SERVER" ] || [ -z "$STORAGE_FTP_USER" ] || [ -z "$STORAGE_FTP_PASSWORD" ]; then
-        cleanup 1 "If FTP is used, STORAGE_FTP_SERVER, STORAGE_FTP_USER and STORAGE_FTP_PASSWORD are mandatory."
-    fi
-    
-    requireCommand curl || cleanup 1
-
-    # define storage procedure
-    storage() {
-        # stay silent, but print error messages if aborting
-        local OPTS="-u $STORAGE_FTP_USER:$STORAGE_FTP_PASSWORD -s -S"
-        if isEnabled "$STORAGE_FTP_USE_SSL"; then
-            OPTS="$OPTS --ftp-ssl"
+case "$STORAGE_METHOD" in
+    FTP)
+        if [ -z "$STORAGE_FTP_SERVER" ] || [ -z "$STORAGE_FTP_USER" ] || [ -z "$STORAGE_FTP_PASSWORD" ]; then
+            cleanup 1 "If FTP is used, STORAGE_FTP_SERVER, STORAGE_FTP_USER and STORAGE_FTP_PASSWORD are mandatory."
         fi
-        if isEnabled "$STORAGE_FTP_SSL_INSECURE"; then
-            OPTS="$OPTS -k"
+        
+        requireCommand curl || cleanup 1
+        
+        # define storage procedure
+        storage() {
+            # stay silent, but print error messages if aborting
+            local OPTS="-u $STORAGE_FTP_USER:$STORAGE_FTP_PASSWORD -s -S"
+            if isEnabled "$STORAGE_FTP_USE_SSL"; then
+                OPTS="$OPTS --ftp-ssl"
+            fi
+            if isEnabled "$STORAGE_FTP_SSL_INSECURE"; then
+                OPTS="$OPTS -k"
+            fi
+            local FILE=$(constructFilename)
+            local URL="ftp://$STORAGE_FTP_SERVER/$STORAGE_FTP_DIR/$FILE"
+            debug "Uploading backup to $URL..."
+            curl $OPTS --upload-file - "$URL"
+        }
+    ;;
+    FILE)
+        if [ -z "$STORAGE_FILE_DIR" ] && [ -d "$STORAGE_FILE_DIR" ]; then
+            cleanup 1 "If file storage is used, STORAGE_FILE_DIR is mandatory and must exist."
         fi
-        local FILE=$(constructFilename)
-        local URL="ftp://$STORAGE_FTP_SERVER/$STORAGE_FTP_DIR/$FILE"
-        debug "Uploading backup to $URL..."
-        curl $OPTS --upload-file - "$URL"
-    }
-elif [ "$STORAGE_METHOD" = "FILE" ]; then
-    if [ -z "$STORAGE_FILE_DIR" ] && [ -d "$STORAGE_FILE_DIR" ]; then
-        cleanup 1 "If file storage is used, STORAGE_FILE_DIR is mandatory and must exist."
-    fi
-    
-    requireCommand cat || cleanup 1
-    
-    # define storage procedure
-    storage() {
-        local FILE="$STORAGE_FILE_DIR/$(constructFilename)"
-        debug "Storing backup to $FILE..."
-        cat - > $FILE
-    }
-elif [ "$STORAGE_METHOD" = "SIMULATE" ]; then
-    storage() {
-        local FILENAME=$( constructFilename )
-        debug "SIMULATION: Proposed filename is $FILENAME, storing backup to /dev/null!"
-        cat - > /dev/null
-    }
-elif [ "$STORAGE_METHOD" = "CUSTOM" ]; then
-    if ! type "TARTARUS_CUSTOM_STORAGE_METHOD" > /dev/null 2>&1; then
-        cleanup 1 "If custom storage is used, a function TARTARUS_CUSTOM_STORAGE_METHOD has to be defined."
-    fi
-    storage() {
-        local FILENAME=$( constructFilename )
-        TARTARUS_CUSTOM_STORAGE_METHOD
-    }
-else
-    cleanup 1 "No valid STORAGE_METHOD defined."
-fi
+        
+        requireCommand cat || cleanup 1
+        
+        # define storage procedure
+        storage() {
+            local FILE="$STORAGE_FILE_DIR/$(constructFilename)"
+            debug "Storing backup to $FILE..."
+            cat - > $FILE
+        }
+    ;;
+    SIMULATE)
+        storage() {
+            local FILENAME=$( constructFilename )
+            debug "SIMULATION: Proposed filename is $FILENAME, storing backup to /dev/null!"
+            cat - > /dev/null
+        }
+    ;;
+    CUSTOM)
+        if ! type "TARTARUS_CUSTOM_STORAGE_METHOD" > /dev/null 2>&1; then
+            cleanup 1 "If custom storage is used, a function TARTARUS_CUSTOM_STORAGE_METHOD has to be defined."
+        fi
+        storage() {
+            local FILENAME=$( constructFilename )
+            TARTARUS_CUSTOM_STORAGE_METHOD
+        }
+    ;;
+    *)
+        cleanup 1 "No valid STORAGE_METHOD defined."
+    ;;
+esac
 
 # compression method that does nothing
 compression() {
@@ -465,28 +477,50 @@ compression() {
 }
 
 ARCHIVE_EXTENSION=""
-# afio handles compression by itself
-if [ "$ASSEMBLY_METHOD" != "afio" ]; then
-    if [ "$COMPRESSION_METHOD" = "bzip2" ]; then
-        requireCommand bzip2 || cleanup 1
-        compression() {
-            bzip2
-        }
-        ARCHIVE_EXTENSION=".bz2"
-    elif [ "$COMPRESSION_METHOD" = "gzip" ]; then
-        requireCommand gzip || cleanup 1
-        compression() {
-            gzip
-        }
-        ARCHIVE_EXTENSION=".gz"
-    elif [ "$COMPRESSION_METHOD" = "pbzip2" ]; then
-        requireCommand pbzip2 || cleanup 1
-        compression() {
-            pbzip2
-        }
-        ARCHIVE_EXTENSION=".bz2"
-    fi
-fi
+case "$ASSEMBLY_METHOD" in
+    afio)
+        # afio handles compression by itself
+        case "$COMPRESSION_METHOD" in
+            gzip)
+                AFIO_OPTIONS="$AFIO_OPTIONS -Z -P gzip"
+                ARCHIVE_EXTENSION=".gz"
+            ;;
+            bzip2)
+                AFIO_OPTIONS="$AFIO_OPTIONS -Z -P bzip2"
+                ARCHIVE_EXTENSION=".bz2"
+            ;;
+            pbzip2)
+                AFIO_OPTIONS="$AFIO_OPTIONS -Z -P pbzip2"
+                ARCHIVE_EXTENSION=".bz2"
+            ;;
+        esac
+    ;;
+    *)
+        case "$COMPRESSION_METHOD" in
+            bzip2)
+                requireCommand bzip2 || cleanup 1
+                compression() {
+                    bzip2
+                }
+                ARCHIVE_EXTENSION=".bz2"
+            ;;
+            gzip)
+                requireCommand gzip || cleanup 1
+                compression() {
+                    gzip
+                }
+                ARCHIVE_EXTENSION=".gz"
+            ;;
+            pbzip2)
+                requireCommand pbzip2 || cleanup 1
+                compression() {
+                    pbzip2
+                }
+                ARCHIVE_EXTENSION=".bz2"
+            ;;
+        esac
+    ;;
+esac
 
 # Just a method that does nothing
 encryption() {

@@ -1,6 +1,6 @@
 Tartarus - A flexible yet simple backup software
 
-Version 0.7.1
+Version 0.9.0
 
 by Stefan Tomanek (stefan.tomanek@wertarbyte.de)
 http://wertarbyte.de/tartarus.shtml
@@ -281,6 +281,35 @@ reuse the existing configuration profile and start Tartarus with the option
 "-i": 'tartarus -i /etc/tartarus/homedirs.conf' will create an incremental
 backups based on the latest flag file deposited by the last full run.
 
+As already said, incremental backups are (normally) based on the last full backup;
+usually, this is called a "differential" backup:
+
+  [F1]->[D1]        [F2]->[D4]
+    \------>[D2]      \------->[D5]
+     `--------->[D3]   `---------->[D6]
+
+While this backup strategy simplifies recovery (since only the most recent full
+and the most recent differential archive has to be extracted, e.g. F2 and D6),
+it can waste backup space in some cases. If a large file is added to the system
+after the full backup has been created, this file will appear in every partial
+backup afterwards.
+
+Another strategy is a "real" incremental backup, which is called a "stacked
+incremental backup" in Tartarus terminology. Instead of basing the partial
+backup on the last full run, it is based on the last successfull run - be it
+complete or partial as well.
+
+[F1]->[I1]->[I2]->[I3]
+                       [F2]->[I4]->[I5]->[I6]
+
+This behaviour will save space, since new (and unchanged) files will only
+appear in one archive. However, restoring a filesystem will require all
+archives to be extracted (F2 _and_ I4 _and_ I5 _and_ _I5_)
+
+Setting INCREMENTAL_STACKING to "yes" will enable this behaviour and makes
+Tartarus update the timestamp file after every backup run, not only after full
+backups.
+
 == Encryption
 
 Tartarus supports symmetric encryption through gpg (GNU Privacy Guard). To
@@ -350,6 +379,14 @@ line for listing such a backup might look like this:
 
 To restore incremental backups, just restore the last full backup as well as the
 most recent incremental one.
+
+== Removing obsolete backup archives
+
+Tartarus is accompanied by the perl script suite called "charon". These scripts
+identify backup archives that exceed a certain age while taking care of files
+other incremental backups depend on.
+
+For further instructions, consult the included file "charon.txt".
 
 == Defining a custom storage method
 
@@ -471,41 +508,3 @@ TARTARUS_POST_FREEZE_HOOK() {
     /sbin/fsck -y "$SNAPDEV"
 }
 
-== Removing obsolete backups from an FTP server
-
-Tartarus is accompanied by the perl script "charon.pl", which roams an FTP
-server and removes any backups archives that match a certain pattern and exceed
-a specified age. Configuration is done via command line arguments, check the
-output of "charon.pl --help" for a detailed list.
-
-# charon.pl --host safehaven --user john --password SECRET --dir / --maxage --profile home --dry-run
-
-This command line will try to log into the server "safehaven" using the user
-name "john" and his password "SECRET" and remove backup file from the profile
-"home" with are more than 7 days old. Due to the command line switch
-"--dry-run", no files are actually deleted - the script will only explain its
-potential actions in its output.
-
-Charon will never remove a full backup until a incremental one depends on it;
-it will be deleted once all depending backups are expired.
-
-The script does not read tartarus backup profiles; by using hooks however it
-can be called from Tartarus after completing a successfull backup run. This
-way, Tartarus can pass the configuration variables to Charon:
-
-# Hook in Charon
-TARTARUS_POST_PROCESS_HOOK() {
-    # pass configuration variables to charon
-    # transmit the password through stdin to hide it from "ps ax"
-    local CHARON="/usr/local/sbin/charon.pl"
-    local MAX_AGE_IN_DAYS="7"
-    echo -n "$STORAGE_FTP_PASSWORD" | $CHARON \
-        --host "$STORAGE_FTP_SERVER" --user "$STORAGE_FTP_USER" \
-        --readpassword \
-        --dir "$STORAGE_FTP_DIR" \
-        --maxage "$MAX_AGE_IN_DAYS" \
-        --profile "$NAME"
-}
-
-TARTARUS_POST_PROCESS_HOOK will only be executed in case of a successfull
-backup, so there won't be any files removed if tartarus encounters an error.

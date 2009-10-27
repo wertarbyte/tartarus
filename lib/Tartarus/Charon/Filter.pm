@@ -4,10 +4,10 @@ package Tartarus::Charon::Filter;
 use Time::Local;
 
 our $filename_re = qr/^tartarus-
-    (?<profile>[^-]+)-
-    (?<date>[0-9]{4}[01][0-9][0-3][0-9]-[012][0-9][0-9]{2})
-    (?:\.|-inc-(?<basedate>[0-9]{4}[01][0-9][0-3][0-9]-[012][0-9][0-9]{2}))?
-    \.(?<chunk>chunk-[0-9]+\.)?(tar|afio)
+    ([^-]+)- # profile
+    ([0-9]{4}[01][0-9][0-3][0-9]-[012][0-9][0-9]{2}) # date
+    (?:\.|-inc-([0-9]{4}[01][0-9][0-3][0-9]-[012][0-9][0-9]{2}))? # base date
+    \.(chunk-[0-9]+\.)?(tar|afio) # chunk
 /x;
 
 sub new {
@@ -71,11 +71,11 @@ sub expire {
 
     for my $filename ($self->files) {
         next unless ($filename =~ $filename_re);
-        my $profile = $+{profile};
+        my $profile = $1;
         next if (defined $only_profile && $profile ne $only_profile);
 
-        my $date = $+{date};
-        my $based_on = $+{basedate};
+        my $date = $2;
+        my $based_on = $3;
         my $inc = defined $based_on;
         
         # construct tree node

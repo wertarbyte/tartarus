@@ -35,7 +35,7 @@ while true ; do
     esac
 done
 
-PROFILE=$1
+PROFILE=${1:-""}
 
 debug() {
     local DEBUGMSG="$*"

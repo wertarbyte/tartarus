@@ -1,3 +1,16 @@
+tartarus (0.9.0-1) unstable; urgency=low
+
+  * make charon handle stacked incremental backups
+  * add docs about stacked incremental backup
+  * remove dependencies on Perl 5.10 for charon
+  * add charon.local to expire local files
+  * add charon.pipe
+  * move charon to charon.ftp
+  * add getopt command line parsing
+  * make bash comparisons case insensitive
+
+ -- Stefan Tomanek <stefan.tomanek@wertarbyte.de>  Tue, 27 Oct 2009 09:13:34 +0100
+
 tartarus (0.8.0-1) unstable; urgency=low
 
   * move file selection to Tartarus::Charon::Filter perl module

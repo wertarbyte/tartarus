@@ -84,7 +84,7 @@ cleanup() {
         debug "Canceling backup procedure and cleaning up..."
     fi
 
-    if isEnabled "${CREATE_LVM_SNAPSHOT:-}"; then
+    if isEnabled "${CREATE_LVM_SNAPSHOT:-}" && [ -n "${SNAPDEV:-}" ]; then
         umount $SNAPDEV 2> /dev/null
         lvremove -f $SNAPDEV 2> /dev/null
     fi

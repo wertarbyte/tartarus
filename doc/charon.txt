@@ -66,5 +66,5 @@ It does not operate on files itself, but simply reads filenames from its standar
 them and writing the expired ones to the standard output. It thus can be employed in custom cleanup
 scripts.
 
-# find -maxdepth 1 -type f -printf '%f\0' | charon.local --maxage 7 --profile all | xargs -0 -- ls -l
+# find -maxdepth 1 -type f -printf '%f\0' | charon.local -0 --maxage 7 --profile all | xargs -0 -- ls -l
 

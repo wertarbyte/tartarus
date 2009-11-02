@@ -25,7 +25,7 @@ sub usage {
     print <<EOF;
 charon.pipe by Stefan Tomanek <stefan.tomanek\@wertarbyte.de>
     
-    --null|-0       filenames are temrinated by the null character
+    --null|-0       filenames are terminated by the null character
     --maxage        maximum age of backup files (in days)
     --profile       backup profile name to process
     --all           process all files found in the directory

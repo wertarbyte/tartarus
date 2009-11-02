@@ -137,7 +137,7 @@ update_check() {
     requireCommand curl awk || return
     local VERSION_URL="http://wertarbyte.de/tartarus/upgrade-$VERSION"
 
-    local NEW_VERSION="$(curl -fs "$VERSION_URL")"
+    local NEW_VERSION="$(curl --connect-timeout 15 -fs "$VERSION_URL")"
     if [ "$?" -ne 0 ]; then
         debug "Error checking version information."
         return 0

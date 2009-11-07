@@ -30,6 +30,78 @@ my $dry_run = 0;
 my $verbose = 0;
 my $help = 0;
 
+=pod
+
+=head1 NAME
+
+charon.ftp -- remove backup files that exceed a certain age from an FTP server
+
+=head1 SYNOPSIS
+
+B<charon.ftp> --host I<host> --user I<name> (--password I<password> | --readpassword) [--dir F<directory>] --maxage I<days> (--profile I<identifier> | --all) [--dry-run] [--verbose] [--help]
+
+=head1
+
+The program charon.ftp removes backup archives created by tartarus from an FTP
+server once they reach a certain age and expire. Files that are older than the
+number of days specified on the command line are considerer candidates for
+removal unless other, non-expired backups are based on them, so full backups
+may survive longer than expected.
+
+=head1 OPTIONS AND ARGUMENTS
+
+=over
+
+=item B<--host> I<server>
+
+Specify the FTP server to connect to
+
+=item B<--user> I<name>
+
+Define the username to authenticate with
+
+=item B<--password> I<pass>
+
+Set the password to authenticate with
+
+=item B<--readpassword>
+
+Instead of specifying the password on the commandline, it can also be read from
+the standard input. This is preferable for obvious security reasons.
+
+=item B<--dir>
+
+Specify the directory on the server the backups files are stored in.
+
+=item B<--maxage> I<n>
+
+Set the maximum number of days after which a backup is expired.
+
+=item B<--profile> I<name>
+
+Set the profile name to process. This is mandatory unless B<--all> is supplied.
+
+=item B<--all>
+
+When this is set, the expiration date is applied to alle files found on the server
+and identified as tartarus backups.
+
+=item B<--dry-run>
+
+This option prevents charon from actually deleting files.
+
+=item B<--verbose>
+
+This option makes charon more verbose about the actions made
+
+=item B<--help>
+
+This parameter shows a brief command reference.
+
+=back
+
+=cut
+
 sub usage {
     my ($error) = @_;
     print <<EOF;
@@ -98,3 +170,46 @@ for my $file ($c->expire($days_to_expire, $uprofile)) {
 }
 
 $ftp->quit();
+
+=head1 EXAMPLE
+
+Using the script is fairly simple and can probably be best explained by looking
+at an example:
+
+    $ charon.ftp --host safehaven --user john --password SECRET --dir / --maxage 7 --profile home --verbose --dry-run
+
+This command line will try to log into the server "safehaven" using the user
+name "john" and his password "SECRET" and remove backup file from the profile
+"home" with are more than 7 days old. Due to the command line switch
+"--dry-run", no files are actually deleted - the script will only explain its
+potential actions in its output.
+
+=head1 Integration with Tartarus
+
+Charon does not (and in fact, cannot) read tartarus backup profiles; by using
+hooks however it can be called from Tartarus after completing a successfull
+backup run. This way, Tartarus can pass the configuration variables to Charon:
+
+    # Hook in Charon
+    TARTARUS_POST_PROCESS_HOOK() {
+        # pass configuration variables to charon
+        # transmit the password through stdin to hide it from "ps ax"
+        local CHARON="/usr/sbin/charon.ftp"
+        local MAX_AGE_IN_DAYS="7"
+        echo -n "$STORAGE_FTP_PASSWORD" | $CHARON \
+            --host "$STORAGE_FTP_SERVER" --user "$STORAGE_FTP_USER" \
+            --readpassword \
+            --dir "$STORAGE_FTP_DIR" \
+            --maxage "$MAX_AGE_IN_DAYS" \
+            --profile "$NAME"
+    }
+
+TARTARUS_POST_PROCESS_HOOK will only be executed in case of a successfull
+backup, so there won't be any files removed if tartarus encounters an error
+during the new backup creation.
+
+=head1 AUTHOR
+
+Stefan Tomanek E<lt>stefan.tomanek@wertarbyte.deE<gt>
+
+=cut

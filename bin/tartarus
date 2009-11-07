@@ -3,7 +3,32 @@
 # Tartarus by Stefan Tomanek <stefan.tomanek@wertarbyte.de>
 #            http://wertarbyte.de/tartarus.shtml
 #
+# Integrated POD documentation can be viewed with the following command:
+# $ sed -rn 's!^# ?!!p' ./tartarus | pod2text
+#
 readonly VERSION="0.9.0"
+
+#=pod
+#
+#=head1 NAME
+#
+# tartarus -- flexible script based backup system
+#
+#=head1 SYNOPSIS
+#
+#B<tartarus> [B<--inc>] I<profile>
+#
+#=head1 DESCRIPTION
+#
+# Tartarus provides a nice wrapper around basic Unix tools such as tar, find
+# and curl to provide a seamless backup solution. Instead of relying on single
+# usage backup scripts or complicated command lines, B<tartarus> reads its
+# configuration from easily managable configuration files. It can store
+# gathered data in regular files, or upload the backup directly (on the fly)
+# to an FTP server. For more specific usage scenarios, custom methods can also
+# be defined within the config file.
+#
+#=cut
 
 # fail on undefined variables
 set -u
@@ -36,6 +61,22 @@ while true ; do
 done
 
 PROFILE=${1:-""}
+
+#=head1 OPTIONS AND ARGUMENTS
+#
+#=over
+#
+#=item B<--inc> | B<-i>
+#
+# Override the INCREMENTAL_BACKUP configuration option and create an
+# differential backup instead of a full one.
+#
+#=back
+#
+# One additional argument is required to specify the profile file to load the
+# backup configuration from.
+#
+#=cut
 
 debug() {
     local DEBUGMSG="$*"
@@ -208,59 +249,6 @@ chunknstore() {
     fi
 }
 
-# Do we only want to check for a new version?
-if isEnabled "$CMD_UPDATE"; then
-    update_check && debug "No new version available"
-    cleanup 0
-fi
-
-if ! [ -e "$PROFILE" ]; then
-    debug "You have to supply the path to a backup profile file."
-    cleanup 1
-fi
-
-
-# Set default values:
-SNAPSHOT_DIR="/snap"
-LVM_SNAPSHOT_SIZE="200m"
-BASEDIR="/"
-# Skip contents of directories
-EXCLUDE=""
-# Don't save files below the directories, but preserve the directory structure
-EXCLUDE_FILES=""
-# Exlude single files that match a certain pattern, e.g. "*.bak" or "*~"
-EXCLUDE_FILENAME_PATTERNS=""
-# Profile specific
-NAME=""
-DIRECTORY=""
-STAY_IN_FILESYSTEM="no"
-CREATE_LVM_SNAPSHOT="no"
-LVM_VOLUME_NAME=""
-# Valid methods are:
-# * tar (default)
-# * afio
-ASSEMBLY_METHOD="tar"
-COMPRESSION_METHOD=""
-# Valid methods are:
-# * FTP
-# * FILE
-# * SIMULATE
-STORAGE_METHOD=""
-STORAGE_FILE_DIR=""
-STORAGE_FTP_SERVER=""
-STORAGE_FTP_DIR="/"
-STORAGE_FTP_USER=""
-STORAGE_FTP_PASSWORD=""
-STORAGE_FTP_USE_SSL="no"
-STORAGE_FTP_SSL_INSECURE="no"
-
-STORAGE_CHUNK_SIZE=""
-
-# Options for incremental backups
-INCREMENTAL_BACKUP="no"
-INCREMENTAL_TIMESTAMP_FILE=""
-INCREMENTAL_STACKING="no"
-
 # Do we want to create or update the timestamp file?
 update_timestamp() {
     # no timestamp file defined
@@ -272,23 +260,268 @@ update_timestamp() {
     return 0
 }
 
-# Encrypt the backup using a passphrase?
+# Do we only want to check for a new version?
+if isEnabled "$CMD_UPDATE"; then
+    update_check && debug "No new version available"
+    cleanup 0
+fi
+
+if ! [ -e "$PROFILE" ]; then
+    debug "You have to supply the path to a backup profile file."
+    cleanup 1
+fi
+
+#=head1 CONFIGURATION
+#
+# Tartarus reads it options from a configuration file specified at the command
+# line. This file is in fact a shell script and has the duty of setting several
+# variables that control the behaviour of the backup script. Each configuration
+# file is called a profile.
+#
+# Parameters can be set by a simple variable assignment or by using more complex
+# methods for advanced use.
+#
+# Whenever a boolean value is expected, the strings "yes" and "no" as well as 1
+# and 0 are accepted.
+#
+#=over
+#
+#=item NAME
+#
+# The profile identifier used for archive files and various other purposes.
+NAME=""
+#
+#=item DIRECTORY
+#
+# The directory to be backed up; only a single directory name is allowed here.
+DIRECTORY=""
+#
+#=item STAY_IN_FILESYSTEM
+#
+# Enabling this directory will prevent the backup process from traversing into
+# directories residing on different filesystems/partitions. This is especially
+# useful when backing up the root directory /, since you probably do not want to
+# store /proc or /sys.
+STAY_IN_FILESYSTEM="no"
+#
+#=item CREATE_LVM_SNAPSHOT
+#
+# If this is set to yes, Tartarus will try to freeze the content of the LVM
+# volume specified with LVM_VOLUME_NAME - The snapshot will then be mounted
+# and used as the backup source.
+#
+# Once set, the specification of LVM_VOLUME_NAME becomes mandatory.
+CREATE_LVM_SNAPSHOT="no"
+#
+#=item LVM_VOLUME_NAME
+#
+# The LVM logical volume to take a snapshot from before backing up: Be sure
+# to specify the correcet volume your DIRECTORY is on, otherwise weird things
+# might happen.
+LVM_VOLUME_NAME=""
+#
+#=item SNAPSHOT_DIR
+#
+# Defaulting to F</snap>, a subdirectory with the name specified by
+# LVM_MOUNT_DIR will be created in the specified directory to create a mount point
+# for the snapshot volume. Afterwards, the SNAPSHOT_DIR becomes the new base directory
+# for the backup process.
+SNAPSHOT_DIR="/snap"
+#
+#=item LVM_SNAPSHOT_SIZE
+#
+# This value specifies the amount of disk space reserved for the volume snapshot.
+# It can handle any format the command "lvcreate" understands, e.g. "200m" as well
+# as "1G". Make sure your volume group has enough disk space to handle the growing
+# divergence between the origin and the snapshot volume during the backup run. This
+# value defaults to "200m".
+LVM_SNAPSHOT_SIZE="200m"
+#
+#=item ASSEMBLY_METHOD
+#
+# The method you would like to employ to combine your file system into an
+# coherent data archive is defined by this variable. The default method is
+# "tar", but Tartarus also supports the more modern "afio" format. You must
+# have the corresponding archive program installed.
+ASSEMBLY_METHOD="tar"
+#
+#=item COMPRESSION_METHOD
+#
+# Tartarus can utilize various compression methods to the shrink the processed data
+# before storing it. Leaving the variable blank (which is the default) will disable
+# compression, other known values are "gzip", "bzip" and "pbzip".
+COMPRESSION_METHOD=""
+#
+#=item STORAGE_METHOD
+#
+# This variable declares how the gathered and processed data should be stored. Various
+# methods are included in Tartarus, while others can be added b custom configuration:
+#
+#=over
+#
+#=item FILE
+#
+# Store the backup archives in the local file system
+#
+#=item FTP
+#
+# Save the backup archives ony-the-fly to an FTP server
+#
+#=item SIMULATE
+#
+# Do not actually save any data, but send it directly to /dev/null
+#
+#=item CUSTOM
+#
+# Using this storage method allows you to implement a custom storage method by defining
+# a shell function called "TARTARUS_CUSTOM_STORAGE_METHOD".
+#
+#=back
+STORAGE_METHOD=""
+#
+#=item STORAGE_FILE_DIR
+#
+# When using local file storage, create backup archives in the directory specified by this
+# variable.
+STORAGE_FILE_DIR=""
+#
+#=item STORAGE_FTP_SERVER
+#
+#=item STORAGE_FTP_DIR
+#
+#=item STORAGE_FTP_USER
+#
+#=item STORAGE_FTP_PASSWORD
+#
+# Specify the FTP server backup data should be send to.
+STORAGE_FTP_SERVER=""
+STORAGE_FTP_DIR="/"
+STORAGE_FTP_USER=""
+STORAGE_FTP_PASSWORD=""
+#
+#=item STORAGE_FTP_USE_SSL
+#
+# When enabled, this option forces an SSL-secured connection when transmitting data to the FTP server.
+STORAGE_FTP_USE_SSL="no"
+#
+#=item STORAGE_FTP_SSL_INSECURE
+#
+# Enabling this option makes Tartarus ignore certain security problems like self signed certificates.
+STORAGE_FTP_SSL_INSECURE="no"
+#
+#=item STORAGE_CHUNK_SIZE
+#
+# The maximum file size (in MiB) the storage medium can handle. If this is set,
+# the backup archive will be split in several files. It can be used to circumvent
+# limitations in old FTP servers or file systems that cannot handle files larger
+# than 2 GiB. To restore the data, the files have to be concatenated.
+STORAGE_CHUNK_SIZE=""
+#
+#=item INCREMENTAL_BACKUP
+#
+# When set, Tartarus won't create a full backup but only save files that have
+# been modified after the file set by INCREMENTAL_TIMESTAMP_FILE has been
+# touched. Instead of enabling this option in the configuration file, this
+# option can be set by specifying the parameter B<--inc> on the command line.
+INCREMENTAL_BACKUP="no"
+#
+#=item INCREMENTAL_TIMESTAMP_FILE
+#
+# Everytime a full backup is successfully completed, Tartarus will touch the 
+# file specified here as a reference point for future incremental backups.
+INCREMENTAL_TIMESTAMP_FILE=""
+#
+#=item INCREMENTAL_STACKING
+#
+# With this option enabled, Tartarus will also update the flagfile after completing
+# a successfull partial (differential/incremental) backup run. By that, incremental
+# backups are "stacked" on each other instead of being based on the most recent full
+# backup.
+INCREMENTAL_STACKING="no"
+#
+#=item EXCLUDE
+#
+# Directories that should be excluded from the backup can be placed in this variable.
+# While Tartarus will not traverse into these directories, they will be included in the
+# backup, although without their content.
+EXCLUDE=""
+#
+#=item EXCLUDE_FILES
+#
+# Files from directories specified in this list will not be included in the backups,
+# while any subdirectories beneath them will be saved, discarding the actual file content
+# but preserving the directory structure.
+EXCLUDE_FILES=""
+#
+#=item EXCLUDE_FILENAME_PATTERNS
+#
+# This variable holds a list of filename patterns to be excluded from the backup.
+EXCLUDE_FILENAME_PATTERNS=""
+#
+#=item ENCRYPT_SYMMETRICALLY
+#
+# When enabled, this option makes Tartarus encrypt the backup archive using a 
+# password read from the file F<ENCRYPT_PASSPHRASE_FILE>.
 ENCRYPT_SYMMETRICALLY="no"
+#
+#=item ENCRYPT_PASSPHRASE_FILE
+#
+# The file specified in this variable stores the passphrase used to encrypt the backup
+# data. Losing the passphrase most certainly leads to a complete loss of the backup data, so
+# it should be stored at a safe place.
 ENCRYPT_PASSPHRASE_FILE=""
-# Encrypt using a public key?
+#
+#=item ENCRYPT_ASYMMETRICALLY
+#
+# If enabled, the backup data will be encrypted using the public key
+# specified by ENCRYPT_KEY_ID. If both ENCRYPT_SYMMETRICALLY and
+# ENCRYPT_ASYMMETRICALLY are enabled, decryption will be possible with the
+# private key or the supplied passphrase (one of them will be sufficient).
 ENCRYPT_ASYMMETRICALLY="no"
+#
+#=item ENCRYPT_KEY_ID
+#
+# This option defines the key id to be used by GnuPG to encrypt the data.
 ENCRYPT_KEY_ID=""
-# Where to find the keyring file
+#
+#=item ENCRYPT_KEYRING
+#
+# This variable points to the location of the keyring handed to GnuGP.
 ENCRYPT_KEYRING=""
+#
+#=item ENCRYPT_GPG_OPTIONS
+#
+# Any additional options can be passed to GnuPG by editing this variable.
 ENCRYPT_GPG_OPTIONS=""
-
+#
+#=item LIMIT_DISK_IO
+#
+# When enabled, the input/output load of the backup process will be limited
+# using using the "ionice" utility.
 LIMIT_DISK_IO="no"
-
+#
+#=item CHECK_FOR_UPDATE
+#
+# Disabling this option will stop Tartarus from checking its website for updates
+# of itself.
 CHECK_FOR_UPDATE="yes"
-
-# Write a logfile with all files found for backup?
+#
+#=item FILE_LIST_CREATION
+#
+# Enabling this option causes Tartarus to write a list of all processed files to the
+# location specified by FILE_LIST_DIRECTORY.
 FILE_LIST_CREATION="no"
+#
+#=item FILE_LIST_DIRECTORY
+#
+# This defines the directory lists of the processed files are placed in.
 FILE_LIST_DIRECTORY=""
+#
+#=back
+#
+#=cut
+
+BASEDIR="/"
 
 requireCommand tr find || cleanup 1
 
@@ -687,3 +920,332 @@ fi
 hook POST_PROCESS
 
 cleanup 0
+
+#=head1 EXAMPLE
+# 
+#=head2 Basic configuration
+# 
+# Suppose you want to backup your home directories on a regular basis; the
+# compressed archive will be stored on a FTP server. This can be achieved easily
+# with just a few lines of tartarus configuration. Let's call the profile
+# definition F</etc/tartarus/homedirs.conf>:
+# 
+#     # That's the profile name
+#     NAME="homedirs"
+#     DIRECTORY="/home"
+#     # We store it using FTP, on the fly
+#     STORAGE_METHOD="FTP"
+#     STORAGE_FTP_SERVER="ftpbackup.hostingcompany.com"
+#     STORAGE_FTP_USER="johndoe"
+#     STORAGE_FTP_PASSWORD="verysecret"
+#     COMPRESSION_METHOD="bzip2"
+# 
+# By calling "tartarus /etc/tartarus/homedirs.conf" the script will gather all
+# files below F</home>, compress them using bzip2 and store it on the FTP server
+# ftpbackup.hostingcompany.com.
+# 
+#=head2 LVM snapshots
+# 
+# Backing up a partition that is in use can lead to inconsistent backups. To
+# avoid this, Tartarus supports the use of LVM snapshots to "freeze" the block
+# device and operate on that static copy. The real volume can still be used while
+# changes done to the file system structure are not reflected on the "frozen"
+# block device.
+# 
+# To use this feature, the file system you wish to back up has to reside on an
+# LVM volume and the volume group has to have some free space to store the
+# differences between snapshot and real volume that accumulate during the backup
+# run. You also have to make sure that the directory /snap does exist, since
+# tartarus mounts the created snapshot volume below that directory.
+# 
+# A few additional lines instruct Tartarus to use the snapshot functionality:
+# 
+#     # Users keep on working
+#     CREATE_LVM_SNAPSHOT="yes"
+#     LVM_VOLUME_NAME="/dev/volumegroup0/home"
+#     LVM_MOUNT_DIR="/home"
+#     # Allocate enough space for any changes during the backup run
+#     LVM_SNAPSHOT_SIZE="1000m"
+# 
+# =head2 Incremental backups
+# 
+# Storing a full backup takes a lot of disk space; Often just storing the files
+# that changed since the last backup is more desirable - this is called a
+# incremental backup.
+# 
+# Tartarus can create a flag file on your system that is used as a reference
+# point when doing the next incremental backup. To do this, just add the
+# following line to your config:
+# 
+#     INCREMENTAL_TIMESTAMP_FILE="/var/spool/tartarus/homedirs"
+# 
+# Everytime a full backup run succeeds, this file is "touched" by Tartarus.
+# 
+# To create an incremental backup based on that file, just add these lines
+# to a profile:
+# 
+#     INCREMENTAL_BACKUP="yes"
+#     INCREMENTAL_TIMESTAMP_FILE="/var/spool/tartarus/homedirs"
+# 
+# Instead of copying the profile file and adding the lines, you can also just
+# reuse the existing configuration profile and start Tartarus with the option
+# "-i": 'tartarus -i /etc/tartarus/homedirs.conf' will create an incremental
+# backups based on the latest flag file deposited by the last full run.
+# 
+# As already said, incremental backups are (normally) based on the last full backup;
+# usually, this is called a "differential" backup:
+# 
+#     [F1]->[D1]        [F2]->[D4]
+#         \------>[D2]      \------->[D5]
+#          `--------->[D3]   `---------->[D6]
+# 
+# While this backup strategy simplifies recovery (since only the most recent full
+# and the most recent differential archive has to be extracted, e.g. F2 and D6),
+# it can waste backup space in some cases. If a large file is added to the system
+# after the full backup has been created, this file will appear in every partial
+# backup afterwards.
+# 
+# Another strategy is a "real" incremental backup, which is called a "stacked
+# incremental backup" in Tartarus terminology. Instead of basing the partial
+# backup on the last full run, it is based on the last successfull run - be it
+# complete or partial as well.
+# 
+#     [F1]->[I1]->[I2]->[I3]
+#                           [F2]->[I4]->[I5]->[I6]
+# 
+# This behaviour will save space, since new (and unchanged) files will only
+# appear in one archive. However, restoring a filesystem will require all
+# archives to be extracted (F2 _and_ I4 _and_ I5 _and_ _I5_)
+# 
+# Setting INCREMENTAL_STACKING to "yes" will enable this behaviour and makes
+# Tartarus update the timestamp file after every backup run, not only after full
+# backups.
+# 
+#=head2 Encryption
+# 
+# Tartarus supports symmetric encryption through gpg (GNU Privacy Guard). To
+# utilize it, write your passphrase into a file, for example
+# F</etc/tartarus/backups.sec>, and place it at a safe location: You might need
+# it one day to restore your precious backup data. Now tell Tartarus where to
+# find the secret passphrase by adding the following lines to your profile:
+# 
+#     ENCRYPT_SYMMETRICALLY="yes"
+#     ENCRYPT_PASSPHRASE_FILE="/etc/tartarus/backups.sec"
+# 
+# Also make sure that the passphrase file is only readable by root; otherwise
+# anyone with access to that file can decrypt your backups.
+# 
+# Asymmetric encryption is also possible. Just specify a key id to encrypt the
+# backup archive using that public key:
+# 
+#     ENCRYPT_ASYMMETRICALLY="yes"
+#     ENCRYPT_KEY_ID="ABC12345"
+# 
+# The resulting backup profile can only be decrypted using the matching private
+# key.
+# 
+# Symmetric and asymmetric encryption can also be combined: Then one credential, either
+# the private key or the passphrase, is sufficient to decrypt the backup archive.
+# 
+# =head1 Restoring a backup
+# 
+# Even more important than creating a backup is restoring it. Since Tartarus is
+# largely based on standard unix tools, you won't have to install special
+# software - even a basic rescue system will suffice to retrieve your lost data.
+# 
+# Given that the backup is stored on an FTP server, compressed an encrypted, we
+# need the following tools to restore it:
+# 
+# =over
+# 
+# =item curl, wget or any other FTP client
+# 
+# =item gpg to decrypt the backup stream
+# 
+# =item gzip or bzip, depending on the compression method used
+# 
+# =item tar to extract the archive
+# 
+# =item afio (or cpio) to extract the archive when using this file format
+# 
+# =back
+# 
+# This enumeration is also the order in which to apply these programs; First
+# download the tar archive to your system, then use "gpg --decrypt" to, well,
+# decrypt it. After that you can expand the file by using "gzip -d" (or the
+# equivalent of bzip2) and retrieve the "naked" tar archive, which can then be
+# manipulated by the usual tar commands.
+# 
+# If you do not have enough disk space to store the entire backup, you can also
+# restore it on the fly; just use the "pipe" feature of any unix shell:
+# 
+#     $ curl ftp://USER:PASS@YOURSERVER/home-20080411-1349.tar.bz2.gpg \
+#         | gpg --decrypt \
+#         | bzip2 -d \
+#         | tar tpv
+#       
+# The tar command "tpv" prints the archives content while using numeric UID/GID
+# values for files (so it won't change file ownership while in the rescue system).
+# If you really want to extract the archive, replace "t" with an "x" (eXtract).
+#       
+# If you are using the afio file format, compression does not take part on the
+# entire stream, but is handled by afio itself on a per file basis. The command
+# line for listing such a backup might look like this:
+#       
+#     $ curl ftp://USER:PASS@YOURSERVER/home-20080411-1349.tar.bz2.gpg \
+#         | gpg --decrypt \
+#         | afio -Z -P bzip2 -t -
+#     
+# To restore incremental backups, just restore the last full backup as well as the
+# most recent incremental one.
+#             
+# =head1 Defining a custom storage method
+# 
+# Tartarus supports the creation of custom storage methods. No changes to the program
+# are necessary to achieve this: Simply set the storage method in the configuration file
+# to "CUSTOM":
+# 
+# STORAGE_METHOD="CUSTOM"
+# 
+# Then define a shell function with the name "TARTARUS_CUSTOM_STORAGE_METHOD". The method
+# should read the backup data from STDIN, while the proposed archive filename is stored in
+# the shell variable "$FILENAME". The following example uses the secure shell to transmit
+# the archive to a remote location:
+# 
+#     TARTARUS_CUSTOM_STORAGE_METHOD() {
+#         local USER="stefan"
+#         local HOST="zirkel.wertarbyte.de"
+#         debug "Sending backup to $USER@$HOST:~/$FILENAME through SSH..."
+#         ssh $USER@$HOST "cat > ~/$FILENAME"
+#     }
+# 
+# Any exit code except 0 is considered an error and will abort the backup
+# process. If the archive is to be split into multiple chunks, the storage method
+# might be called more than once.
+# 
+#=head1 Tartarus processing hooks
+#
+# For special configuration purposes, the Tartarus scripts offers special hooks
+# where user supplied code can be placed and executed during the backup
+# procedure.
+# 
+# The following hooks are called during the run of the program:
+#
+#=over
+# 
+#=item TARTARUS_PRE_PROCESS_HOOK
+#
+#     Called right after the config file has been read and the program starts
+# 
+#=item TARTARUS_POST_PROCESS_HOOK
+#
+#     Called right before the program terminates gracefully, before the cleanup
+#     procedure
+# 
+#=item TARTARUS_PRE_CONFIGVERIFY_HOOK
+#
+#     Called before the configuration gets verified (after TARTARUS_PRE_PROCESS_HOOK)
+# 
+#=item TARTARUS_POST_CONFIGVERIFY_HOOK
+#
+#     Called after all configuration options and command line arguments have been inspected
+# 
+#=item TARTARUS_PRE_CLEANUP_HOOK
+#
+#     Called before the cleanup procedure runs, the variable ABORT indicates whether
+#     the program terminated gracefully
+# 
+#=item TARTARUS_POST_CLEANUP_HOOK
+#
+#     Called at the end of the cleanup procedure
+# 
+#=item TARTARUS_PRE_FREEZE_HOOK
+#
+#     Called right before a LVM snapshot is created
+# 
+#=item TARTARUS_POST_FREEZE_HOOK
+#
+#     Called right after a LVM snapshot has been created
+# 
+#=item TARTARUS_PRE_STORE_HOOK
+#
+#     Called right before the backup data is gathered and stored
+# 
+#=item TARTARUS_POST_STORE_HOOK
+#
+#     Called right after the backup has been stored
+# 
+#=item TARTARUS_DEBUG_HOOK
+#
+#     Called whenever a debug message (contained in the variable DEBUGMSG) is printed
+#
+#=back
+# 
+# Each segment of the backup procedure - gathering , bundling, compression,
+# encryption and storage - itself is also embraced by a pair of hooks. Those
+# functions however are integrated into the pipeline that transports your backup
+# data, so writing to STDOUT or reading from STDIN in a hook might destroy your
+# data. Only do so if you know exactly what you are doing.
+#
+#=over
+# 
+#=item TARTARUS_PRE_FIND_HOOK / TARTARUS_POST_FIND_HOOK
+#
+#     Executed before/after the find process gathers the files to be saved
+# 
+#=item TARTARUS_PRE_TAR_HOOK / TARTARUS_POST_FIND_HOOK
+#
+#     Executed before/after tar bundles the files to an archive stream
+# 
+#=item TARTARUS_PRE_COMPRESSION_HOOK / TARTARUS_POST_COMPRESSION_HOOK
+#
+#     Executed before/after the data stream is handled by the compression software
+# 
+#=item TARTARUS_PRE_COMPRESSION_HOOK / TARTARUS_POST_COMPRESSION_HOOK
+#
+#     Executed before/after the data stream is processed by the encryption software
+# 
+#=item TARTARUS_PRE_STORAGE_HOOK / TARTARUS_POST_STORAGE_HOOK
+#
+#     Executed before/after the stream is handed over to the storage function
+#
+#=back
+# 
+# To use a hook, define a shell function of the name in your config file.
+# 
+# As an example, this hook function transfers all debug messages to your syslog
+# system:
+# 
+#     TARTARUS_DEBUG_HOOK() {
+#         echo $DEBUGMSG | logger 
+#     }
+# 
+# Hooks can also increase the reliability of the snapshot functionality. LVM
+# snapshots can lead to slightly inconsistent file systems, since they do not
+# freeze the file system, but the underlying block device. This is why Tartarus
+# calls 'sync' right before creating the snapshot volume. Most filesystems can
+# cope with that issue. But if you want to make sure that the snapshot file
+# system is valid, hooks can be used to run a file system check on the snapshot
+# volume before mounting it:
+# 
+#     TARTARUS_PRE_FREEZE_HOOK() {
+#         # make sure everything is synced to disk
+#         # before snapshotting
+#         sync
+#     }
+# 
+#     TARTARUS_POST_FREEZE_HOOK() {
+#         # we can access the internal variables
+#         # of the tartarus process, but take care!
+#         #
+#         # $SNAPDEV should contain the volume we are
+#         # about to mount, try auto-repair
+#         /sbin/fsck -y "$SNAPDEV"
+#     }
+# 
+#=head1 AUTHOR
+#
+# Stefan Tomanek E<lt>stefan.tomanek@wertarbyte.deE<gt>
+# http://wertarbyte.de/tartarus.shtml
+#
+#=cut

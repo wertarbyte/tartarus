@@ -9,5 +9,12 @@
 # Uncomment this to turn on verbose mode.
 #export DH_VERBOSE=1
 
+override_dh_auto_build:
+	dh_auto_build
+	sed -rn 's!^# ?!!p' bin/tartarus | pod2man --name Tartarus --center=" " --release=$(VERSION) - > tartarus.1
+	pod2man --release=$(VERSION) --name="charon.ftp" --center=" " bin/charon.ftp > charon.ftp.1
+	pod2man --release=$(VERSION) --name="charon.local" --center=" " bin/charon.local > charon.local.1
+	pod2man --release=$(VERSION) --name="charon.pipe" --center=" " bin/charon.pipe > charon.pipe.1
+
 %:
 	dh  $@

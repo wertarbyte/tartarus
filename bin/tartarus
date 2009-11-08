@@ -6,7 +6,7 @@
 # Integrated POD documentation can be viewed with the following command:
 # $ sed -rn 's!^# ?!!p' ./tartarus | pod2text
 #
-readonly VERSION="0.9.0"
+readonly VERSION="0.9.1"
 
 #=pod
 #

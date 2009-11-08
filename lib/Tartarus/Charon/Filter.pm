@@ -4,10 +4,12 @@ package Tartarus::Charon::Filter;
 use Time::Local;
 
 our $filename_re = qr/^tartarus-
-    ([^-]+)- # profile
+    (.+?)- # profile
     ([0-9]{4}[01][0-9][0-3][0-9]-[012][0-9][0-9]{2}) # date
     (?:\.|-inc-([0-9]{4}[01][0-9][0-3][0-9]-[012][0-9][0-9]{2}))? # base date
-    \.(chunk-[0-9]+\.)?(tar|afio) # chunk
+    \.(chunk-[0-9]+\.)? # chunk
+    (tar|afio) # archive format
+    (?:$|\.) # end of filename or additional extensions for compression or encryption
 /x;
 
 sub new {

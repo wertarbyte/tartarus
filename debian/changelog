@@ -1,3 +1,18 @@
+tartarus (0.9.1-1) unstable; urgency=low
+
+  * add connection timeout to update check
+  * various minor bugfixes
+  * add -0 to charon documentation
+  * add regular expression for archive names in charon
+  * move tartarus documentation to POD data in script
+  * add POD/manpage for charon.ftp
+  * add POD/manpage to charon.local
+  * add POD/manpage to charon.pipe
+  * remove duplicate documentation from /usr/share/doc
+  * update version number to 0.9.1
+
+ -- Stefan Tomanek <stefan.tomanek@wertarbyte.de>  Sun, 08 Nov 2009 22:33:49 +0100
+
 tartarus (0.9.0-1) unstable; urgency=low
 
   * make charon handle stacked incremental backups

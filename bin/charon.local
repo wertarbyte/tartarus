@@ -27,7 +27,7 @@ my $help = 0;
 
 =head1 NAME
 
-charon.local -- remove backup files that exceed a certain age from a local directoy
+charon.local - remove backup files that exceed a certain age from a local directoy
 
 =head1 SYNOPSIS
 

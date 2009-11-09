@@ -34,7 +34,7 @@ my $help = 0;
 
 =head1 NAME
 
-charon.ftp -- remove backup files that exceed a certain age from an FTP server
+charon.ftp - remove backup files that exceed a certain age from an FTP aite
 
 =head1 SYNOPSIS
 

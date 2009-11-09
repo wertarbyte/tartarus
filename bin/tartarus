@@ -12,7 +12,7 @@ readonly VERSION="0.9.1"
 #
 #=head1 NAME
 #
-# tartarus -- flexible script based backup system
+# tartarus - a flexible script based backup system
 #
 #=head1 SYNOPSIS
 #
@@ -996,9 +996,9 @@ cleanup 0
 # As already said, incremental backups are (normally) based on the last full backup;
 # usually, this is called a "differential" backup:
 # 
-#     [F1]->[D1]        [F2]->[D4]
-#         \------>[D2]      \------->[D5]
-#          `--------->[D3]   `---------->[D6]
+#     [F1]->[D1]           [F2]->[D4]
+#         \----->[D2]         \------>[D5]
+#          `--------->[D3]     `---------->[D6]
 # 
 # While this backup strategy simplifies recovery (since only the most recent full
 # and the most recent differential archive has to be extracted, e.g. F2 and D6),
@@ -1059,15 +1059,15 @@ cleanup 0
 # 
 # =over
 # 
-# =item curl, wget or any other FTP client
+# =item * curl, wget or any other FTP client
 # 
-# =item gpg to decrypt the backup stream
+# =item * gpg to decrypt the backup stream
 # 
-# =item gzip or bzip, depending on the compression method used
+# =item * gzip or bzip, depending on the compression method used
 # 
-# =item tar to extract the archive
+# =item * tar to extract the archive
 # 
-# =item afio (or cpio) to extract the archive when using this file format
+# =item * afio (or cpio) to extract the archive when using this file format
 # 
 # =back
 # 

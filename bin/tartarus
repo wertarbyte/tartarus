@@ -345,6 +345,12 @@ LVM_SNAPSHOT_SIZE="200m"
 # have the corresponding archive program installed.
 ASSEMBLY_METHOD="tar"
 #
+#=item TAR_OPTIONS
+#
+# This variable allows additional to be passed to tar. One common value would be
+# I<--ignore-failed-read> to ignore files that disappear during the backup run.
+TAR_OPTIONS=""
+#
 #=item COMPRESSION_METHOD
 #
 # Tartarus can utilize various compression methods to the shrink the processed data
@@ -617,7 +623,7 @@ case "$ASSEMBLY_METHOD" in
         # use the traditional tar setup
         requireCommand tar || cleanup 1
         collate() {
-            local TAROPTS="--no-unquote --no-recursion"
+            local TAROPTS="--no-unquote --no-recursion $TAR_OPTIONS"
             call tar cpf -  $TAROPTS --null -T -
             local EXITCODE=$?
             # exit code 1 means that some files have changed while backing them

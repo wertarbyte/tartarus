@@ -1,0 +1,39 @@
+Tartarus - a flexible script based backup system
+
+by Stefan Tomanek <stefan.tomanek@wertarbyte.de>
+
+Thanks for downloading and extracting the tartarus package.  Since you are
+reading this, you for some reason refrained from taking the easy (and
+recommended) road of downloading a Debian package and be done with it.
+
+If you are running a debian based distribution, please consider turning back
+and fetching a readily prepared package from http://wertarbyte.de/apt/
+
+This document describes the manual installation procedure of the tartarus
+suite, which consists of three separate components.
+
+1. the tartarus script: bin/tartarus
+
+The central script of the suite is a shell script, so it does not require
+any compilation or other preparation. It is sufficient to copy the file
+to a location within your path, e.g. /usr/local/sbin
+
+2. the charon programs and libraries: bin/charon* and lib/*
+
+Charon, which is an optional script to remove expired backup archives from your
+storage is a Perl script and consists of a set of scripts and a perl module.
+While the scripts can be placed alongside tartarus in /usr/local/sbin, the Perl
+module has to be copied to a place the Perl interpreter can find it.  You can
+check the locations Perl looks for modules by typing "perl -V".  For users of
+Perl 5.10 it might be possible to copy the direcory lib/Tartarus (which
+contains the modules inside the correct directory structure) to
+/usr/local/share/perl/5.10.1/, but you probably need to verify that location.
+
+3. the manual pages: man/*
+
+All documentation of tartarus and charon is ancapsulated in appropiate
+manpages.  The Makefile supplied in this archive takes care of their
+generation, the command "make" should place them in the directory man/.  The
+files can be copied to the directory /usr/local/share/man/man1/ for easy
+access.
+

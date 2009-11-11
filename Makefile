@@ -1,4 +1,5 @@
-RELEASE=
+# extreact release version from tartarus script
+RELEASE:=$(shell grep '^readonly VERSION="' bin/tartarus | cut -d\" -f 2)
 
 mandir=man
 

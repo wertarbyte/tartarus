@@ -9,5 +9,10 @@
 # Uncomment this to turn on verbose mode.
 #export DH_VERBOSE=1
 
+CURRENTVERSION := $(shell dpkg-parsechangelog | sed -n 's/^Version: //p')
+
+override_dh_auto_build:
+	dh_auto_build -- RELEASE:=$(CURRENTVERSION)
+
 %:
 	dh  $@

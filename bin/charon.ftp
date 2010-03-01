@@ -112,6 +112,7 @@ sub usage {
 charon.ftp by Stefan Tomanek <stefan.tomanek\@wertarbyte.de>
 
     --host          FTP server to connect to
+    --ssl           use SSL for contacting the server
     --user          username to authenticate with
     --password      password to authenticate with
     --readpassword  read password from stdin

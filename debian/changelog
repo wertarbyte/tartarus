@@ -1,3 +1,12 @@
+tartarus (0.9.2-1) unstable; urgency=low
+
+  * improve documentation format
+  * add TAR_OPTIONS configuration variable
+  * add FTP-SSL support to charon.ftp
+  * introduce LVM_MOUNT_OPTIONS
+
+ -- Stefan Tomanek <stefan.tomanek@wertarbyte.de>  Mon, 01 Mar 2010 09:46:03 +0100
+
 tartarus (0.9.1-1) unstable; urgency=low
 
   * add connection timeout to update check

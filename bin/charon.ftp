@@ -11,7 +11,6 @@
 
 use strict;
 use warnings;
-use Net::FTP;
 use Getopt::Long;
 use Tartarus::Charon::Filter;
 
@@ -20,6 +19,7 @@ my $host = undef;
 # username and password
 my ($user, $pass) = (undef, "");
 my $read_password = 0;
+my $use_ssl = 0;
 my $dir = "/";
 
 my $days_to_expire = undef;
@@ -38,7 +38,7 @@ charon.ftp - remove backup files that exceed a certain age from an FTP aite
 
 =head1 SYNOPSIS
 
-B<charon.ftp> --host I<host> --user I<name> (--password I<password> | --readpassword) [--dir F<directory>] --maxage I<days> (--profile I<identifier> | --all) [--dry-run] [--verbose] [--help]
+B<charon.ftp> --host I<host> [--ssl] --user I<name> (--password I<password> | --readpassword) [--dir F<directory>] --maxage I<days> (--profile I<identifier> | --all) [--dry-run] [--verbose] [--help]
 
 =head1
 
@@ -55,6 +55,10 @@ may survive longer than expected.
 =item B<--host> I<server>
 
 Specify the FTP server to connect to
+
+=item B<--ssl>
+
+Use SSL to secure the connection (requires Net::FTPSSL)
 
 =item B<--user> I<name>
 
@@ -108,6 +112,7 @@ sub usage {
 charon.ftp by Stefan Tomanek <stefan.tomanek\@wertarbyte.de>
 
     --host          FTP server to connect to
+    --ssl           use SSL for contacting the server
     --user          username to authenticate with
     --password      password to authenticate with
     --readpassword  read password from stdin
@@ -127,6 +132,7 @@ EOF
 
 GetOptions(
     "host|h|server=s"   => \$host,
+    "ssl"               => \$use_ssl,
     "username|user|u=s" => \$user,
     "password|p=s"      => \$pass,
     "readpassword|r"    => \$read_password,
@@ -138,6 +144,16 @@ GetOptions(
     "verbose|v"         => \$verbose,
     "help|h"            => \$help
 ) || usage();
+
+# which module do we use for the connection?
+my $ftpclass;
+if ($use_ssl) {
+    require Net::FTPSSL;
+    $ftpclass = 'Net::FTPSSL';
+} else {
+    require Net::FTP;
+    $ftpclass = 'Net::FTP';
+}
 
 usage "No expiration age given" unless defined $days_to_expire;
 usage "No servername specified" unless defined $host;
@@ -152,10 +168,18 @@ if ($read_password) {
     print STDERR " Thank you.\n" if $verbose;
 }
 
-my $ftp = Net::FTP->new($host, Debug => 0, Passive => 1) || die "Unable to connect to server";
+my $ftp = $ftpclass->new($host, Debug => 0, Passive => 1) || die "Unable to connect to server";
 $ftp->login($user, $pass) || die "Unable to authenticate, ", $ftp->message();
 $ftp->cwd($dir) || die "Error changing to backup directory, ", $ftp->message();
-my @listing = $ftp->ls();
+
+my @listing;
+if (ref($ftp) eq 'Net::FTP') {
+    @listing = $ftp->ls();
+} elsif (ref($ftp) eq 'Net::FTPSSL') {
+    # FTPSSL uses a different method name for
+    # retrieving the directory listing
+    @listing = $ftp->nlst();
+}
 
 my $c = new Tartarus::Charon::Filter();
 $c->verbose($verbose);

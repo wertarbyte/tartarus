@@ -328,6 +328,11 @@ LVM_VOLUME_NAME=""
 # for the backup process.
 SNAPSHOT_DIR="/snap"
 #
+#=item LVM_MOUNT_OPTIONS
+#
+# Additional options passed to the mount command
+LVM_MOUNT_OPTIONS=""
+#
 #=item LVM_SNAPSHOT_SIZE
 #
 # This value specifies the amount of disk space reserved for the volume snapshot.
@@ -835,7 +840,7 @@ if isEnabled "$CREATE_LVM_SNAPSHOT"; then
     hook POST_FREEZE
     # mount the new volume
     mkdir -p "$SNAPSHOT_DIR/$LVM_MOUNT_DIR" || cleanup 1 "Unable to create mountpoint"
-    mount "$SNAPDEV" "$SNAPSHOT_DIR/$LVM_MOUNT_DIR" || cleanup 1 "Unable to mount snapshot"
+    mount $LVM_MOUNT_OPTIONS "$SNAPDEV" "$SNAPSHOT_DIR/$LVM_MOUNT_DIR" || cleanup 1 "Unable to mount snapshot"
     BASEDIR="$SNAPSHOT_DIR"
 fi
 

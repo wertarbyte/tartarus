@@ -6,7 +6,7 @@
 # Integrated POD documentation can be viewed with the following command:
 # $ sed -rn 's!^# ?!!p' ./tartarus | pod2text
 #
-readonly VERSION="0.9.2"
+readonly VERSION="0.9.3"
 
 #=pod
 #
@@ -126,8 +126,10 @@ cleanup() {
     fi
 
     if isEnabled "${CREATE_LVM_SNAPSHOT:-}" && [ -n "${SNAPDEV:-}" ]; then
-        umount $SNAPDEV 2> /dev/null
-        lvremove -f $SNAPDEV 2> /dev/null
+        # some filesystens (e.g. ntfs3g) appear as /dev/loop* in /proc/mounts,
+        # so unmounting the snapshot device might fail
+        umount $SNAPDEV || umount "$SNAPSHOT_DIR/$LVM_MOUNT_DIR"
+        lvremove -f $SNAPDEV
     fi
     if [ "$ABORT" -eq "1" ]; then
         debug "done"

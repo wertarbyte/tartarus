@@ -183,7 +183,8 @@ if (ref($ftp) eq 'Net::FTP') {
 
 my $c = new Tartarus::Charon::Filter();
 $c->verbose($verbose);
-$c->files( @listing );
+# some FTP servers include . and .. in their listing
+$c->files( grep {!/^\.\.?$/} @listing );
 
 # if $uprofile is undefined, the filter works on all profiles
 for my $file ($c->expire($days_to_expire, $uprofile)) {

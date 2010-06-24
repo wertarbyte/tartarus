@@ -378,7 +378,7 @@ COMPRESSION_METHOD=""
 #
 #=item FTP
 #
-# Save the backup archives ony-the-fly to an FTP server
+# Save the backup archives on-the-fly to an FTP server
 #
 #=item SIMULATE
 #

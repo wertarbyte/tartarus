@@ -3,16 +3,16 @@ Section: admin
 Priority: extra
 Maintainer: Stefan Tomanek <stefan.tomanek@wertarbyte.de>
 Build-Depends: debhelper (>= 7)
-Standards-Version: 3.8.1
+Standards-Version: 3.8.0
 Homepage: http://wertarbyte.de/tartarus.shtml
 
 Package: tartarus
 Architecture: all
 Depends: ${misc:Depends}, tar (>= 1.16) | afio
 Recommends: perl, curl
-Suggests: gnupg, bzip2 | gzip | pbzip2 (>= 1.0.3-1), lvm2, util-linux
+Suggests: gnupg, bzip2 | gzip (>= 1.3) | pbzip2 (>= 1.0.3-1), lvm2, util-linux (>=2.13)
 Description: script based backup system
  Tartarus is a script based backup system that relies on default
- utilities available on most regular linux systems. It supports
+ utilities available on most regular Linux systems. It supports
  on-the-fly upload to an FTP server, compression, encryption and
  can easily be extended by hooks.

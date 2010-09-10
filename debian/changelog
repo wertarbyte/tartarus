@@ -1,3 +1,9 @@
+tartarus (0.9.4-1) unstable; urgency=low
+
+  * add SFTP support
+
+ -- Stefan Tomanek <stefan.tomanek@wertarbyte.de>  Sat, 11 Sep 2010 01:31:25 +0200
+
 tartarus (0.9.3-1) unstable; urgency=low
 
   * umount snapshot by specifying the mountpoint

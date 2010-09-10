@@ -422,6 +422,11 @@ STORAGE_FTP_USE_SSL="no"
 # Enabling this option makes Tartarus ignore certain security problems like self signed certificates.
 STORAGE_FTP_SSL_INSECURE="no"
 #
+#=item STORAGE_FTP_USE_SFTP
+#
+# When enabled, tartarus uses SFTP instead of plain old FTP to access the server
+STORAGE_FTP_USE_SFTP="no"
+#
 #=item STORAGE_CHUNK_SIZE
 #
 # The maximum file size (in MiB) the storage medium can handle. If this is set,
@@ -675,8 +680,12 @@ case "$STORAGE_METHOD" in
             if isEnabled "$STORAGE_FTP_SSL_INSECURE"; then
                 OPTS="$OPTS -k"
             fi
+            local PROTO="ftp"
+            if isEnabled "$STORAGE_FTP_USE_SFTP"; then
+                PROTO="sftp"
+            fi
             local FILE=$(constructFilename)
-            local URL="ftp://$STORAGE_FTP_SERVER/$STORAGE_FTP_DIR/$FILE"
+            local URL="$PROTO://$STORAGE_FTP_SERVER/$STORAGE_FTP_DIR/$FILE"
             debug "Uploading backup to $URL..."
             curl $OPTS --upload-file - "$URL"
         }

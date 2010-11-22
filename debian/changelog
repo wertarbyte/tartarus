@@ -1,3 +1,13 @@
+tartarus (0.9.5-1) unstable; urgency=low
+
+  * add debian/watch
+  * stop modifying version string
+  * increment standards version
+  * add COPYING (GPLv3)
+  * fix typo in tartarus documentation
+
+ -- Stefan Tomanek <stefan.tomanek+debian@wertarbyte.de>  Mon, 22 Nov 2010 17:16:28 +0100
+
 tartarus (0.9.4-2) unstable; urgency=low
 
   * adjust debhelper version

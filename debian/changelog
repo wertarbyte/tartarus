@@ -3,6 +3,7 @@ tartarus (0.9.4-2) unstable; urgency=low
   * adjust debhelper version
   * add manpage charon.1 (-> charon.ftp.1)
   * Switch to dpkg-source 3.0 (quilt) format
+  * create Debian package (Closes: #604447)
 
  -- Stefan Tomanek <stefan.tomanek+debian@wertarbyte.de>  Thu, 18 Nov 2010 00:21:06 +0100
 

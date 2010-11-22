@@ -1,6 +1,6 @@
 Tartarus - a flexible script based backup system
 
-by Stefan Tomanek <stefan.tomanek@wertarbyte.de>
+by Stefan Tomanek <stefan.tomanek+tartarus@wertarbyte.de>
 
 Thanks for downloading and extracting the tartarus package.  Since you are
 reading this, you for some reason refrained from taking the easy (and

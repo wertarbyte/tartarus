@@ -1,7 +1,7 @@
 Source: tartarus
 Section: admin
 Priority: extra
-Maintainer: Stefan Tomanek <stefan.tomanek@wertarbyte.de>
+Maintainer: Stefan Tomanek <stefan.tomanek+debian@wertarbyte.de>
 Build-Depends: debhelper (>= 7.0.50~)
 Standards-Version: 3.8.0
 Homepage: http://wertarbyte.de/tartarus.shtml

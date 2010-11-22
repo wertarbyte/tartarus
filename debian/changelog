@@ -4,20 +4,20 @@ tartarus (0.9.4-2) unstable; urgency=low
   * add manpage charon.1 (-> charon.ftp.1)
   * Switch to dpkg-source 3.0 (quilt) format
 
- -- Stefan Tomanek <stefan.tomanek@wertarbyte.de>  Thu, 18 Nov 2010 00:21:06 +0100
+ -- Stefan Tomanek <stefan.tomanek+debian@wertarbyte.de>  Thu, 18 Nov 2010 00:21:06 +0100
 
 tartarus (0.9.4-1) unstable; urgency=low
 
   * add SFTP support
 
- -- Stefan Tomanek <stefan.tomanek@wertarbyte.de>  Sat, 11 Sep 2010 01:31:25 +0200
+ -- Stefan Tomanek <stefan.tomanek+debian@wertarbyte.de>  Sat, 11 Sep 2010 01:31:25 +0200
 
 tartarus (0.9.3-1) unstable; urgency=low
 
   * umount snapshot by specifying the mountpoint
   * remove . and .. from FTP listings
 
- -- Stefan Tomanek <stefan.tomanek@wertarbyte.de>  Tue, 15 Jun 2010 12:08:12 +0200
+ -- Stefan Tomanek <stefan.tomanek+debian@wertarbyte.de>  Tue, 15 Jun 2010 12:08:12 +0200
 
 tartarus (0.9.2-1) unstable; urgency=low
 
@@ -26,7 +26,7 @@ tartarus (0.9.2-1) unstable; urgency=low
   * add FTP-SSL support to charon.ftp
   * introduce LVM_MOUNT_OPTIONS
 
- -- Stefan Tomanek <stefan.tomanek@wertarbyte.de>  Mon, 01 Mar 2010 09:46:03 +0100
+ -- Stefan Tomanek <stefan.tomanek+debian@wertarbyte.de>  Mon, 01 Mar 2010 09:46:03 +0100
 
 tartarus (0.9.1-1) unstable; urgency=low
 
@@ -41,7 +41,7 @@ tartarus (0.9.1-1) unstable; urgency=low
   * remove duplicate documentation from /usr/share/doc
   * update version number to 0.9.1
 
- -- Stefan Tomanek <stefan.tomanek@wertarbyte.de>  Sun, 08 Nov 2009 22:33:49 +0100
+ -- Stefan Tomanek <stefan.tomanek+debian@wertarbyte.de>  Sun, 08 Nov 2009 22:33:49 +0100
 
 tartarus (0.9.0-1) unstable; urgency=low
 
@@ -54,27 +54,27 @@ tartarus (0.9.0-1) unstable; urgency=low
   * add getopt command line parsing
   * make bash comparisons case insensitive
 
- -- Stefan Tomanek <stefan.tomanek@wertarbyte.de>  Tue, 27 Oct 2009 09:13:34 +0100
+ -- Stefan Tomanek <stefan.tomanek+debian@wertarbyte.de>  Tue, 27 Oct 2009 09:13:34 +0100
 
 tartarus (0.8.0-1) unstable; urgency=low
 
   * move file selection to Tartarus::Charon::Filter perl module
   * now creating spool directory /var/spool/tartarus during installation
 
- -- Stefan Tomanek <stefan.tomanek@wertarbyte.de>  Tue, 20 Oct 2009 21:54:46 +0200
+ -- Stefan Tomanek <stefan.tomanek+debian@wertarbyte.de>  Tue, 20 Oct 2009 21:54:46 +0200
 
 tartarus (0.7.1-2) unstable; urgency=low
 
   * added debian suffix to upgrade check URL
   * added version dependency for pbzip2 packages (1.0.3 is needed)
 
- -- Stefan Tomanek <stefan.tomanek@wertarbyte.de>  Mon, 19 Oct 2009 00:58:33 +0200
+ -- Stefan Tomanek <stefan.tomanek+debian@wertarbyte.de>  Mon, 19 Oct 2009 00:58:33 +0200
 
 tartarus (0.7.1-1) unstable; urgency=low
 
   * fixed parsing of pbzip2 compression
 
- -- Stefan Tomanek <stefan.tomanek@wertarbyte.de>  Sun, 18 Oct 2009 13:10:51 +0200
+ -- Stefan Tomanek <stefan.tomanek+debian@wertarbyte.de>  Sun, 18 Oct 2009 13:10:51 +0200
 
 tartarus (0.7.0-1) unstable; urgency=low
 
@@ -83,29 +83,29 @@ tartarus (0.7.0-1) unstable; urgency=low
   * moved documentation.txt to /usr/share/doc/tartarus/configuration.txt
   * minor bugfixes
 
- -- Stefan Tomanek <stefan.tomanek@wertarbyte.de>  Sat, 17 Oct 2009 14:10:08 +0200
+ -- Stefan Tomanek <stefan.tomanek+debian@wertarbyte.de>  Sat, 17 Oct 2009 14:10:08 +0200
 
 tartarus (0.6.5-1) unstable; urgency=low
 
   * switched to new debian build system
 
- -- Stefan Tomanek <stefan.tomanek@wertarbyte.de>  Tue, 13 Oct 2009 15:41:56 +0200
+ -- Stefan Tomanek <stefan.tomanek+debian@wertarbyte.de>  Tue, 13 Oct 2009 15:41:56 +0200
 
 tartarus (0.6.5) unstable; urgency=low
 
   * minor bugfixes
   * added the possibility to exlcude files based on filename patterns
 
- -- Stefan Tomanek <stefan.tomanek@wertarbyte.de>  Sat, 10 Oct 2009 10:01:53 +0200
+ -- Stefan Tomanek <stefan.tomanek+debian@wertarbyte.de>  Sat, 10 Oct 2009 10:01:53 +0200
 
 tartarus (0.6.4.2-1.1) unstable; urgency=low
 
   * changed dependency from lvm-common to lvm2
 
- -- Stefan Tomanek <stefan.tomanek@wertarbyte.de>  Fri, 03 Jul 2009 00:28:04 +0200
+ -- Stefan Tomanek <stefan.tomanek+debian@wertarbyte.de>  Fri, 03 Jul 2009 00:28:04 +0200
 
 tartarus (0.6.4.2-1) unstable; urgency=low
 
   * Initial Debian packaging
 
- -- Stefan Tomanek <stefan.tomanek@wertarbyte.de>  Thu, 02 Jul 2009 23:20:19 +0200
+ -- Stefan Tomanek <stefan.tomanek+debian@wertarbyte.de>  Thu, 02 Jul 2009 23:20:19 +0200

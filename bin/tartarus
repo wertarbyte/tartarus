@@ -316,9 +316,17 @@ DIRECTORY=""
 STAY_IN_FILESYSTEM="no"
 #
 #=item KPARTX
+#
+# Kpartx can be used to set up device mappings for the partitions of any partitioned 
+# block device. If set to yes, kpartx will map the partitions so the filesystem can
+# be accessed
+#
+# Once set, the specification of KPARTX_PARTITION becomes mandatory.
 KPARTX=""
 #
 #=item KPARTX_PARTITION
+#
+# This is mandantory if KPARTX is set to yes. This is the name of the mapped partition.
 KPARTX_PARTITION=""
 #
 #=item CREATE_LVM_SNAPSHOT

@@ -1,3 +1,14 @@
+tartarus (0.9.6-1) unstable; urgency=low
+
+  [ Stefan Tomanek ]
+  * make charon.ftp die if unable to retrieve listing
+  * increment version number to 0.9.6
+
+  [ Sascha Kettler ]
+  * Added support for truncate-before-delete in charon.ftp
+
+ -- Stefan Tomanek <stefan.tomanek+debian@wertarbyte.de>  Thu, 20 Jan 2011 23:44:25 +0100
+
 tartarus (0.9.5-1) unstable; urgency=low
 
   * add debian/watch

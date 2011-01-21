@@ -183,11 +183,14 @@ $ftp->cwd($dir) || die "Error changing to backup directory, ", $ftp->message();
 
 my @listing;
 if (ref($ftp) eq 'Net::FTP') {
-    @listing = $ftp->ls() || die "Unable to retrieve directory listing, ", $ftp->message();
+    @listing = $ftp->ls();
 } elsif (ref($ftp) eq 'Net::FTPSSL') {
     # FTPSSL uses a different method name for
     # retrieving the directory listing
-    @listing = $ftp->nlst() || die "Unable to retrieve directory listing, ", $ftp->message();
+    @listing = $ftp->nlst();
+}
+unless (@listing) {
+    die "Unable to retrieve directory listing, ", $ftp->message();
 }
 
 my $c = new Tartarus::Charon::Filter();

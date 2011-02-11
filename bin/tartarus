@@ -803,7 +803,7 @@ if isEnabled "$ENCRYPT_SYMMETRICALLY" || isEnabled "$ENCRYPT_ASYMMETRICALLY"; th
     if isEnabled "$ENCRYPT_ASYMMETRICALLY"; then
         if [ -n "$ENCRYPT_KEYRING" ]; then
             if [ -f "$ENCRYPT_KEYRING" ]; then
-                GPGOPTIONS="$GPGOPTIONS --keyring $ENCRYPT_KEYRING"
+                GPG_BASE_OPTIONS="$GPG_BASE_OPTIONS --no-default-keyring --keyring $ENCRYPT_KEYRING"
             else
                 cleanup 1 "ENCRYPT_KEYRING '$ENCRYPT_KEYRING' specified but not found."
             fi

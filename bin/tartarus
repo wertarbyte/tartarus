@@ -808,11 +808,17 @@ if isEnabled "$ENCRYPT_SYMMETRICALLY" || isEnabled "$ENCRYPT_ASYMMETRICALLY"; th
                 cleanup 1 "ENCRYPT_KEYRING '$ENCRYPT_KEYRING' specified but not found."
             fi
         fi
-        # Can we find the key id?
-        if ! gpg $GPG_BASE_OPTIONS --list-key "$ENCRYPT_KEY_ID" >/dev/null 2>&1; then
-            cleanup 1 "Unable to find ENCRYPT_KEY_ID '$ENCRYPT_KEY_ID'."
-        else
-            GPGOPTIONS="$GPGOPTIONS --encrypt -r $ENCRYPT_KEY_ID"
+        # Can we find the key ids?
+        RCPT_OPTS=''
+        for i in $ENCRYPT_KEY_ID; do
+            if ! gpg $GPG_BASE_OPTIONS --list-key "$i" >/dev/null 2>&1; then
+                cleanup 1 "Unable to find ENCRYPT_KEY_ID '$i'."
+            else
+                RCPT_OPTS="$RCPT_OPTS -r $i"
+            fi
+        done
+        if [ -n "$RCPT_OPTS" ]; then
+            GPGOPTIONS="$GPGOPTIONS $RCPT_OPTS --encrypt"
         fi
 
     fi

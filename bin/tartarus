@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Tartarus by Stefan Tomanek <stefan.tomanek@wertarbyte.de>
+# Tartarus by Stefan Tomanek <stefan.tomanek+tartarus@wertarbyte.de>
 #            http://wertarbyte.de/tartarus.shtml
 #
 # Integrated POD documentation can be viewed with the following command:
@@ -1273,7 +1273,7 @@ cleanup 0
 # 
 #=head1 AUTHOR
 #
-# Stefan Tomanek E<lt>stefan.tomanek@wertarbyte.deE<gt>
+# Stefan Tomanek E<lt>stefan.tomanek+tartarus@wertarbyte.deE<gt>
 # http://wertarbyte.de/tartarus.shtml
 #
 #=cut

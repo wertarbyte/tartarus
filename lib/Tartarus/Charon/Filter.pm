@@ -1,6 +1,11 @@
 use strict;
 package Tartarus::Charon::Filter;
 
+# Copyright 2008 Stefan Tomanek <stefan.tomanek+tartarus@wertarbyte.de>
+# You have permission to copy, modify, and redistribute under the
+# terms of the GPLv3 or any later version.
+# For full license terms, see COPYING.
+
 use Time::Local;
 
 our $filename_re = qr/^tartarus-

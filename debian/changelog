@@ -1,3 +1,18 @@
+tartarus (0.9.8-1) unstable; urgency=low
+
+  [ Stefan Tomanek ]
+  * fix loading of custom GPG keyring
+  * avoid infinite loops during charon filtering
+
+  [ Eike Lang ]
+  * Allow multiple key ids for asymmetric encryption
+
+  [ Stefan Tomanek ]
+  * tweak versions of dependencies in debian/control
+  * add licence info and increment version to 0.9.8
+
+ -- Stefan Tomanek <stefan.tomanek+debian@wertarbyte.de>  Wed, 25 May 2011 22:53:11 +0200
+
 tartarus (0.9.7-1) unstable; urgency=low
 
   * fix context of ls-calls in charon.ftp

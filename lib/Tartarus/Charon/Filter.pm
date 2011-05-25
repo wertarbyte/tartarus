@@ -1,6 +1,11 @@
 use strict;
 package Tartarus::Charon::Filter;
 
+# Copyright 2008 Stefan Tomanek <stefan.tomanek+tartarus@wertarbyte.de>
+# You have permission to copy, modify, and redistribute under the
+# terms of the GPLv3 or any later version.
+# For full license terms, see COPYING.
+
 use Time::Local;
 
 our $filename_re = qr/^tartarus-
@@ -60,13 +65,16 @@ sub expire {
     
     my $preserve;
     $preserve = sub {
-        my ($profile, $date) = @_;
+        my ($profile, $date, $seen) = @_;
+        # abort if a file is encountered again
+        die "ERROR: Circular archive dependency ($profile-$date) detected, aborting!\n" if ($seen->{$profile}{$date});
+        $seen->{$profile}{$date} = 1;
         return unless $delete{$profile}{$date}{expired};
         $delete{$profile}{$date}{expired} = 1;
         
         if ($delete{$profile}{$date}{base}) {
             print STDERR "Preserving $profile-".$delete{$profile}{$date}{base}." for $profile-$date\n" if $self->verbose;
-            &{$preserve}( $profile, $delete{$profile}{$date}{base} );
+            &{$preserve}( $profile, $delete{$profile}{$date}{base}, $seen );
         }
         delete $delete{$profile}{$date};
     };
@@ -91,7 +99,7 @@ sub expire {
             print STDERR "$filename is $age days old, scheduling for deletion\n" if $self->verbose;
         } else {
             # If it is an incremental backup, we have to preserve the backup it is based on
-            &$preserve( $profile, $date );
+            &$preserve( $profile, $date, {} );
         }
     }
     

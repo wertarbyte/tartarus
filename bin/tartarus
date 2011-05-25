@@ -1,12 +1,17 @@
 #!/bin/bash
 #
-# Tartarus by Stefan Tomanek <stefan.tomanek@wertarbyte.de>
+# Tartarus by Stefan Tomanek <stefan.tomanek+tartarus@wertarbyte.de>
 #            http://wertarbyte.de/tartarus.shtml
 #
 # Integrated POD documentation can be viewed with the following command:
 # $ sed -rn 's!^# ?!!p' ./tartarus | pod2text
 #
-readonly VERSION="0.9.7"
+# Copyright 2008 Stefan Tomanek <stefan.tomanek+tartarus@wertarbyte.de>
+# You have permission to copy, modify, and redistribute under the
+# terms of the GPLv3 or any later version.
+# For full license terms, see COPYING.
+
+readonly VERSION="0.9.8"
 
 #=pod
 #
@@ -803,16 +808,22 @@ if isEnabled "$ENCRYPT_SYMMETRICALLY" || isEnabled "$ENCRYPT_ASYMMETRICALLY"; th
     if isEnabled "$ENCRYPT_ASYMMETRICALLY"; then
         if [ -n "$ENCRYPT_KEYRING" ]; then
             if [ -f "$ENCRYPT_KEYRING" ]; then
-                GPGOPTIONS="$GPGOPTIONS --keyring $ENCRYPT_KEYRING"
+                GPG_BASE_OPTIONS="$GPG_BASE_OPTIONS --no-default-keyring --keyring $ENCRYPT_KEYRING"
             else
                 cleanup 1 "ENCRYPT_KEYRING '$ENCRYPT_KEYRING' specified but not found."
             fi
         fi
-        # Can we find the key id?
-        if ! gpg $GPG_BASE_OPTIONS --list-key "$ENCRYPT_KEY_ID" >/dev/null 2>&1; then
-            cleanup 1 "Unable to find ENCRYPT_KEY_ID '$ENCRYPT_KEY_ID'."
-        else
-            GPGOPTIONS="$GPGOPTIONS --encrypt -r $ENCRYPT_KEY_ID"
+        # Can we find the key ids?
+        RCPT_OPTS=''
+        for i in $ENCRYPT_KEY_ID; do
+            if ! gpg $GPG_BASE_OPTIONS --list-key "$i" >/dev/null 2>&1; then
+                cleanup 1 "Unable to find ENCRYPT_KEY_ID '$i'."
+            else
+                RCPT_OPTS="$RCPT_OPTS -r $i"
+            fi
+        done
+        if [ -n "$RCPT_OPTS" ]; then
+            GPGOPTIONS="$GPGOPTIONS $RCPT_OPTS --encrypt"
         fi
 
     fi
@@ -1267,7 +1278,7 @@ cleanup 0
 # 
 #=head1 AUTHOR
 #
-# Stefan Tomanek E<lt>stefan.tomanek@wertarbyte.deE<gt>
+# Stefan Tomanek E<lt>stefan.tomanek+tartarus@wertarbyte.deE<gt>
 # http://wertarbyte.de/tartarus.shtml
 #
 #=cut

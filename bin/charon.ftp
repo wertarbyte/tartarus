@@ -21,6 +21,7 @@ use Tartarus::Charon::Filter;
 
 # your backup FTP server
 my $host = undef;
+my $port = 21;
 # username and password
 my ($user, $pass) = (undef, "");
 my $read_password = 0;
@@ -169,6 +170,10 @@ if ($use_ssl) {
     $ftpclass = 'Net::FTP';
 }
 
+if ($host =~ m/^([^:]+):(\d+)$/) {
+    ($host, $port) = ($1, $2);
+}
+
 usage "No expiration age given" unless defined $days_to_expire;
 usage "No servername specified" unless defined $host;
 usage "No username specified" unless defined $user;
@@ -182,7 +187,7 @@ if ($read_password) {
     print STDERR " Thank you.\n" if $verbose;
 }
 
-my $ftp = $ftpclass->new($host, Debug => 0, Passive => 1) || die "Unable to connect to server";
+my $ftp = $ftpclass->new($host, Port => $port, Debug => 0, Passive => 1) || die "Unable to connect to server";
 $ftp->login($user, $pass) || die "Unable to authenticate, ", $ftp->message();
 $ftp->cwd($dir) || die "Error changing to backup directory, ", $ftp->message();
 

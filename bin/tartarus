@@ -1226,7 +1226,7 @@ cleanup 0
 #
 #     Executed before/after the find process gathers the files to be saved
 # 
-#=item TARTARUS_PRE_TAR_HOOK / TARTARUS_POST_FIND_HOOK
+#=item TARTARUS_PRE_TAR_HOOK / TARTARUS_POST_TAR_HOOK
 #
 #     Executed before/after tar bundles the files to an archive stream
 # 
@@ -1234,7 +1234,7 @@ cleanup 0
 #
 #     Executed before/after the data stream is handled by the compression software
 # 
-#=item TARTARUS_PRE_COMPRESSION_HOOK / TARTARUS_POST_COMPRESSION_HOOK
+#=item TARTARUS_PRE_ENCRYPTION_HOOK / TARTARUS_POST_ENCRYPTION_HOOK
 #
 #     Executed before/after the data stream is processed by the encryption software
 # 

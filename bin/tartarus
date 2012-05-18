@@ -363,6 +363,12 @@ ASSEMBLY_METHOD="tar"
 # I<--ignore-failed-read> to ignore files that disappear during the backup run.
 TAR_OPTIONS=""
 #
+#=item CURL_OPTIONS
+#
+# This variable allows additional flags to be passed to curl, for example
+# I<--limit-rate> if you want to limit network traffic for some reason.
+CURL_OPTIONS=""
+#
 #=item COMPRESSION_METHOD
 #
 # Tartarus can utilize various compression methods to the shrink the processed data
@@ -692,7 +698,7 @@ case "$STORAGE_METHOD" in
             local FILE=$(constructFilename)
             local URL="$PROTO://$STORAGE_FTP_SERVER/$STORAGE_FTP_DIR/$FILE"
             debug "Uploading backup to $URL..."
-            curl $OPTS --upload-file - "$URL"
+            curl $OPTS $CURL_OPTIONS --upload-file - "$URL"
         }
     ;;
     FILE)

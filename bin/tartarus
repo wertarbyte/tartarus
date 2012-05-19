@@ -21,7 +21,7 @@ readonly VERSION="0.9.8"
 #
 #=head1 SYNOPSIS
 #
-#B<tartarus> [B<--inc>] I<profile>
+#B<tartarus> [B<options>] I<profile>
 #
 #=head1 DESCRIPTION
 #
@@ -43,10 +43,11 @@ shopt -s nocasematch
 
 CMD_INCREMENTAL="no"
 CMD_UPDATE="no"
+CMD_CURL_SILENT_FLAGS="-s -S"
 PROFILE=""
 
 # check command line
-GETOPT_TEMP=$(getopt -o ui --long update,inc -n tartarus -- "$@")
+GETOPT_TEMP=$(getopt -o uip --long update,inc,progress -n tartarus -- "$@")
 if [ $? != 0 ] ; then echo "Terminating..." >&2 ; exit 1 ; fi
 
 eval set -- "$GETOPT_TEMP"
@@ -58,6 +59,10 @@ while true ; do
         ;;
         --update|-u)
             CMD_UPDATE="yes";
+            shift
+        ;;
+        --progress|-p)
+            CMD_CURL_SILENT_FLAGS="";
             shift
         ;;
         --) shift ; break ;;
@@ -75,6 +80,11 @@ PROFILE=${1:-""}
 #
 # Override the INCREMENTAL_BACKUP configuration option and create an
 # differential backup instead of a full one.
+#
+#=item B<--progress> | B<-p>
+#
+# Show curl progress bar, useful when running manual backups and you
+# need upload progress indicator.
 #
 #=back
 #
@@ -362,6 +372,12 @@ ASSEMBLY_METHOD="tar"
 # This variable allows additional to be passed to tar. One common value would be
 # I<--ignore-failed-read> to ignore files that disappear during the backup run.
 TAR_OPTIONS=""
+#
+#=item CURL_OPTIONS
+#
+# This variable allows additional flags to be passed to curl, for example
+# I<--limit-rate> if you want to limit network traffic for some reason.
+CURL_OPTIONS=""
 #
 #=item COMPRESSION_METHOD
 #
@@ -678,7 +694,7 @@ case "$STORAGE_METHOD" in
         # define storage procedure
         storage() {
             # stay silent, but print error messages if aborting
-            local OPTS="-u $STORAGE_FTP_USER:$STORAGE_FTP_PASSWORD -s -S"
+            local OPTS="-u $STORAGE_FTP_USER:$STORAGE_FTP_PASSWORD $CMD_CURL_SILENT_FLAGS"
             if isEnabled "$STORAGE_FTP_USE_SSL"; then
                 OPTS="$OPTS --ftp-ssl"
             fi
@@ -692,7 +708,7 @@ case "$STORAGE_METHOD" in
             local FILE=$(constructFilename)
             local URL="$PROTO://$STORAGE_FTP_SERVER/$STORAGE_FTP_DIR/$FILE"
             debug "Uploading backup to $URL..."
-            curl $OPTS --upload-file - "$URL"
+            curl $OPTS $CURL_OPTIONS --upload-file - "$URL"
         }
     ;;
     FILE)

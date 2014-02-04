@@ -28,7 +28,7 @@ readonly VERSION="0.9.8"
 # Tartarus provides a nice wrapper around basic Unix tools such as tar, find
 # and curl to provide a seamless backup solution. Instead of relying on single
 # usage backup scripts or complicated command lines, B<tartarus> reads its
-# configuration from easily manageable configuration files. It can store
+# configuration from easily managable configuration files. It can store
 # gathered data in regular files, or upload the backup directly (on the fly)
 # to an FTP server. For more specific usage scenarios, custom methods can also
 # be defined within the config file.
@@ -141,11 +141,19 @@ cleanup() {
     fi
 
     if isEnabled "${CREATE_LVM_SNAPSHOT:-}" && [ -n "${SNAPDEV:-}" ]; then
+        if isEnabled "${KPARTX:-}"; then
+            umount $KPARTX_PARTITION || umount "$SNAPSHOT_DIR/$LVM_MOUNT_DIR"
+            kpartx -dv ${LVM_VOLUME_NAME}_snap
+            lvremove -f $SNAPDEV
+        else
+
         # some filesystens (e.g. ntfs3g) appear as /dev/loop* in /proc/mounts,
         # so unmounting the snapshot device might fail
         umount $SNAPDEV || umount "$SNAPSHOT_DIR/$LVM_MOUNT_DIR"
         lvremove -f $SNAPDEV
+      fi
     fi
+
     if [ "$ABORT" -eq "1" ]; then
         debug "done"
     fi
@@ -194,6 +202,7 @@ call() {
 update_check() {
     requireCommand curl awk || return
     local VERSION_URL="http://wertarbyte.de/tartarus/upgrade-$VERSION"
+    VERSION_URL="${VERSION_URL}-deb"
 
     local NEW_VERSION="$(curl --connect-timeout 15 -fs "$VERSION_URL")"
     if [ "$?" -ne 0 ]; then
@@ -321,6 +330,20 @@ DIRECTORY=""
 # store /proc or /sys.
 STAY_IN_FILESYSTEM="no"
 #
+#=item KPARTX
+#
+# Kpartx can be used to set up device mappings for the partitions of any partitioned 
+# block device. If set to yes, kpartx will map the partitions so the filesystem can
+# be accessed
+#
+# Once set, the specification of KPARTX_PARTITION becomes mandatory.
+KPARTX=""
+#
+#=item KPARTX_PARTITION
+#
+# This is mandantory if KPARTX is set to yes. This is the name of the mapped partition.
+KPARTX_PARTITION=""
+#
 #=item CREATE_LVM_SNAPSHOT
 #
 # If this is set to yes, Tartarus will try to freeze the content of the LVM
@@ -358,6 +381,7 @@ LVM_MOUNT_OPTIONS=""
 # divergence between the origin and the snapshot volume during the backup run. This
 # value defaults to "200m".
 LVM_SNAPSHOT_SIZE="200m"
+#
 #
 #=item ASSEMBLY_METHOD
 #
@@ -627,6 +651,16 @@ if isEnabled "$CREATE_LVM_SNAPSHOT"; then
     if ! [ -d "$SNAPSHOT_DIR" ]; then
         cleanup 1 "Snapshot directory '$SNAPSHOT_DIR' not found."
     fi
+
+    # Check if we have to use kpartx
+    if isEnabled "$KPARTX"; then
+        if [ -z "$KPARTX_PARTITION" ]; then
+          cleanup 1 "KPARTX_PARTITION is mandantory when using partx"
+        fi
+
+        requireCommand partx || cleanup 1
+
+    fi
 fi
 
 constructFilename() {
@@ -877,9 +911,18 @@ if isEnabled "$CREATE_LVM_SNAPSHOT"; then
     # and another hook
     hook POST_FREEZE
     # mount the new volume
+
+    if isEnabled "$KPARTX"; then
+      mkdir -p "$SNAPSHOT_DIR/$LVM_MOUNT_DIR" || cleanup 1 "Unable to create mountpoint"
+      kpartx -av ${LVM_VOLUME_NAME}_snap
+      mount $LVM_MOUNT_OPTIONS "$KPARTX_PARTITION" "$SNAPSHOT_DIR/$LVM_MOUNT_DIR" || cleanup 1 "Unable to mount snapshot"
+      BASEDIR="$SNAPSHOT_DIR"
+    else
+
     mkdir -p "$SNAPSHOT_DIR/$LVM_MOUNT_DIR" || cleanup 1 "Unable to create mountpoint"
     mount $LVM_MOUNT_OPTIONS "$SNAPDEV" "$SNAPSHOT_DIR/$LVM_MOUNT_DIR" || cleanup 1 "Unable to mount snapshot"
     BASEDIR="$SNAPSHOT_DIR"
+  fi
 fi
 
 # Construct excludes for find

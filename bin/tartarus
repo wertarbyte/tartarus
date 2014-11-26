@@ -383,7 +383,7 @@ CURL_OPTIONS=""
 #
 # Tartarus can utilize various compression methods to the shrink the processed data
 # before storing it. Leaving the variable blank (which is the default) will disable
-# compression, other known values are "gzip", "bzip2" and "pbzip2".
+# compression, other known values are "gzip", "bzip2", "pbzip2" and "xz".
 COMPRESSION_METHOD=""
 #
 #=item STORAGE_METHOD
@@ -768,6 +768,9 @@ case "$ASSEMBLY_METHOD" in
                 AFIO_OPTIONS="$AFIO_OPTIONS -Z -P pbzip2"
                 ARCHIVE_EXTENSION=".bz2"
             ;;
+            xz)
+                AFIO_OPTIONS="$AFIO_OPTIONS -Z -P xz"
+                ARCHIVE_EXTENSION=".xz"
         esac
     ;;
     *)
@@ -792,6 +795,13 @@ case "$ASSEMBLY_METHOD" in
                     pbzip2
                 }
                 ARCHIVE_EXTENSION=".bz2"
+            ;;
+            xz)
+                requireCommand xz || cleanup 1
+                compression() {
+                    xz
+                }
+                ARCHIVE_EXTENSION=".xz"
             ;;
         esac
     ;;

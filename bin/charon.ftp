@@ -151,13 +151,13 @@ GetOptions(
     "password|p=s"      => \$pass,
     "readpassword|r"    => \$read_password,
     "maxage|m=i"        => \$days_to_expire,
-    "profile|p=s"       => \$uprofile,
+    "profile"	        => \$uprofile,
     "all|a"             => \$all,
     "directory|dir|d=s" => \$dir,
     "test|dry-run|n"    => \$dry_run,
     "truncate|t"        => \$truncate,
     "verbose|v"         => \$verbose,
-    "help|h"            => \$help
+    "help"	            => \$help
 ) || usage();
 
 # which module do we use for the connection?

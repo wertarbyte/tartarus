@@ -708,7 +708,7 @@ case "$STORAGE_METHOD" in
             local FILE=$(constructFilename)
             local URL="$PROTO://$STORAGE_FTP_SERVER/$STORAGE_FTP_DIR/$FILE"
             debug "Uploading backup to $URL..."
-            curl $OPTS $CURL_OPTIONS --upload-file - "$URL"
+            curl $OPTS $CURL_OPTIONS  --ftp-create-dirs --upload-file - "$URL"
         }
     ;;
     FILE)
